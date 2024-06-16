@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+    <gresource prefix="/com/github/cosmicfusion/fedora-kernel-manager/icons/scalable/actions/">
+        <file compressed="true" preprocess="xml-stripblanks">tux-symbolic.svg</file>
+    </gresource>
+    <gresource prefix="/com/github/cosmicfusion/fedora-kernel-manager/css/">
+        <file compressed="true">style.css</file>
+    </gresource>
+</gresources>
