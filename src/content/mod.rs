@@ -16,7 +16,7 @@ pub fn content() -> gtk::Box {
 
     tux_icon.set_icon_name(Some("tux-symbolic"));
 
-    tux_icon.add_css_class("valid-action");
+    tux_icon.add_css_class("symbolic-accent-bg");
 
     content_box.append(&tux_icon);
 
