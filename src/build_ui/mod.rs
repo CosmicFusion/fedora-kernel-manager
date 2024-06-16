@@ -3,12 +3,18 @@ use gtk::prelude::*;
 use adw::*;
 use adw::prelude::*;
 use crate::{content, PRETTY_NAME};
-use content::content;
 
 pub fn build_ui(app: &adw::Application) {
     let window = adw::ApplicationWindow::new(app);
 
     load_icon_theme(&window);
+
+    window.connect_close_request(move |window| {
+        if let Some(application) = window.application() {
+            application.remove_window(window);
+        }
+        glib::Propagation::Proceed
+    });
 
     let window_headerbar = adw::HeaderBar::builder()
         .title_widget(&adw::WindowTitle::builder().title(PRETTY_NAME).build())

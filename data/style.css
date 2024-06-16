@@ -1,3 +1,21 @@
 .symbolic-accent-bg {
     color: @accent_bg_color;
 }
+
+.background-accent-bg {
+    background: @accent_bg_color;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+.background-green-bg {
+    background: green;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+.background-salmon-bg {
+    background: darksalmon;
+    border-radius: 10px;
+    padding: 5px;
+}
