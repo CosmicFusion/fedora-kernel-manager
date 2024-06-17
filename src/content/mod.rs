@@ -4,6 +4,10 @@ use gtk::prelude::{BoxExt, WidgetExt};
 use std::process::{Command, Stdio};
 use crate::{KernelBranch, RunningKernelInfo};
 use Vec;
+use std::fs;
+use std::path::Path;
+use duct::cmd;
+use version_compare::Version;
 
 pub fn content() -> gtk::Box {
 
@@ -126,18 +130,52 @@ fn get_running_kernel_info() -> RunningKernelInfo {
     };
 
     let version = match linux_version::linux_kernel_version() {
-        Ok(t) => format!("{}.{}.{}", t.major, t.minor, t.patch),
+        Ok(t) => {
+            if t.patch == 0 {
+                format!("{}.{}", t.major, t.minor)
+            } else {
+                format!("{}.{}.{}", t.major, t.minor, t.patch)
+            }
+        }
         Err(_) => "Unknown".to_string()
     };
 
     let info = RunningKernelInfo {
         kernel: kernel,
-        version: version,
+        version: version.clone(),
         // didn't find a way to accurately get this, outside of sched-ext (https://github.com/CachyOS/kernel-manager/blob/develop/src/schedext-window.cpp)
-        sched: "TODO".to_owned()
+        sched: get_current_scheduler(version)
     };
 
     info
+}
+
+fn get_current_scheduler(version: String) -> String {
+    if Path::new("/sys/kernel/sched_ext/root/ops").exists() {
+        println!("sched_ext is detected, getting scx scheduler");
+        let scx_sched = "sched_ext: ".to_string() + fs::read_to_string("/sys/kernel/sched_ext/root/ops").unwrap().as_str();
+        scx_sched
+    } else if bore_check() {
+        "BORE".to_string()
+    } else if Version::from(&version) >= Version::from("6.6")  {
+        "EEVDF?".to_string()
+    } else {
+        "CFS?".to_string()
+    }
+}
+
+fn bore_check() -> bool {
+   let is_bore= match cmd!("sysctl", "-n", "kernel.sched_bore").read() {
+     Ok(t) => {
+         if t == "1" {
+             true
+         } else {
+             false
+         }
+     }
+       Err(_) => false
+   };
+    is_bore
 }
 
 fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKernelInfo) {
