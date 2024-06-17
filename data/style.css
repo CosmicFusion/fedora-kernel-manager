@@ -19,3 +19,17 @@
     border-radius: 10px;
     padding: 5px;
 }
+
+.round-border-only-top {
+    border-top-right-radius: 15px;
+    border-top-left-radius: 15px;
+    border-bottom-right-radius 0=px;
+    border-bottom-left-radius 0px;
+}
+
+.round-border-only-bottom {
+    border-top-right-radius: 0px;
+    border-top-left-radius: 0px;
+    border-bottom-right-radius 15px;
+    border-bottom-left-radius 15px;
+}

@@ -42,6 +42,7 @@ pub fn content() -> gtk::Box {
         .build();
 
     let kernel_branch_expander_row = adw::ExpanderRow::builder()
+        .subtitle("Kernel Branch")
         .build();
 
     kernel_branch_expander_row.add_row(&kernel_branch_expandable(&kernel_branch_expander_row));
@@ -72,11 +73,11 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
     let searchbar = gtk::SearchEntry::builder()
         .search_delay(500)
         .build();
+    searchbar.add_css_class("round-border-only-top");
 
     let boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
         .build();
-    boxedlist.add_css_class("boxedlist");
 
     boxedlist.append(&searchbar);
 
@@ -113,7 +114,10 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
 
     let branch_container_viewport = gtk::ScrolledWindow::builder()
         .child(&branch_container)
+        .hscrollbar_policy(PolicyType::Never)
         .build();
+
+    branch_container.add_css_class("round-border-only-bottom");
 
     boxedlist.append(&branch_container_viewport);
 
@@ -198,7 +202,12 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
       db: "https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/db-kernel-cachy.json".to_string()
     };
 
-    vec![test_branch]
+    let test_branch2 = KernelBranch {
+        name: "kernel-cachy".to_string(),
+        db: "https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/db-kernel-cachy.json".to_string()
+    };
+
+    vec![test_branch, test_branch2]
 }
 fn get_running_kernel_info() -> RunningKernelInfo {
     let kernel = match Command::new("uname").arg("-r").stdout(Stdio::piped()).output() {
