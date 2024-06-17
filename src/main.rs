@@ -10,8 +10,14 @@ const APP_ID: &str = "com.github.cosmicfusion.fedora-kernel-manager";
 const PRETTY_NAME: &str = "Fedora Kernel Manager";
 
 struct RunningKernelInfo {
+    kernel: String,
     version: String,
     sched: String,
+}
+
+struct KernelBranch {
+    name: String,
+    db: String,
 }
 
 fn main() -> glib::ExitCode {

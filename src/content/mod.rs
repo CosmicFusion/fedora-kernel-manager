@@ -2,7 +2,8 @@ use adw::prelude::ActionRowExt;
 use gtk::{Align, IconSize, Orientation, SelectionMode, SizeGroupMode};
 use gtk::prelude::{BoxExt, WidgetExt};
 use std::process::{Command, Stdio};
-use crate::RunningKernelInfo;
+use crate::{KernelBranch, RunningKernelInfo};
+use Vec;
 
 pub fn content() -> gtk::Box {
 
@@ -28,14 +29,15 @@ pub fn content() -> gtk::Box {
 
     tux_icon.add_css_class("symbolic-accent-bg");
 
-    let kernel_badges_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
-    let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
-    let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
+    let kernel_badge_box = gtk::Box::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .orientation(Orientation::Vertical)
+        .build();
 
-    content_box.append(&create_kernel_badge("Kernel Branch", "cachy", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
-    content_box.append(&create_kernel_badge("Latest Version", "6.9", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
-    content_box.append(&create_kernel_badge("Running Version", &running_kernel_info.version, "background-salmon-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
-    content_box.append(&create_kernel_badge("Running Sched", &running_kernel_info.sched, "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    create_kernel_badges(&kernel_badge_box, &running_kernel_info);
+
+    content_box.append(&kernel_badge_box);
     content_box.append(&tux_icon);
 
     content_box
@@ -92,18 +94,45 @@ fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, gr
     boxedlist
 }
 
+//fn get_kernel_branches() -> Vec<KernelBranch> {}
 fn get_running_kernel_info() -> RunningKernelInfo {
-    let version = match Command::new("uname").arg("-r").stdout(Stdio::piped()).output() {
+    let kernel = match Command::new("uname").arg("-r").stdout(Stdio::piped()).output() {
         Ok(t) =>  String::from_utf8(t.stdout).unwrap().trim().to_owned(),
         Err(_) => "Unknown".to_string()
     };
 
-    println!("{}", version);
+    let version = match linux_version::linux_kernel_version() {
+        Ok(t) => format!("{}.{}.{}", t.major, t.minor, t.patch),
+        Err(_) => "Unknown".to_string()
+    };
 
     let info = RunningKernelInfo {
+        kernel: kernel,
         version: version,
+        // didn't find a way to accurately get this, outside of sched-ext (https://github.com/CachyOS/kernel-manager/blob/develop/src/schedext-window.cpp)
         sched: "TODO".to_owned()
     };
 
     info
+}
+
+fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKernelInfo) {
+    let kernel_badges_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
+    let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
+    let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
+
+    let kernel_version = "6.9";
+
+    let version_css_style = if &running_kernel_info.version.as_str() == &kernel_version {
+        "background-green-bg"
+    }
+    else {
+        "background-red-bg"
+    };
+
+    badge_box.append(&create_kernel_badge("Kernel Branch", "cachy", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    badge_box.append(&create_kernel_badge("Latest Version", "6.9", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    badge_box.append(&create_kernel_badge("Running Version", &running_kernel_info.version, &version_css_style, &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    badge_box.append(&create_kernel_badge("Running Kernel", &running_kernel_info.kernel, &version_css_style, &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    badge_box.append(&create_kernel_badge("Running Sched", &running_kernel_info.sched, "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
 }
