@@ -137,6 +137,7 @@ name = "fedora-kernel-manager"
 version = "0.1.0"
 dependencies = [
  "duct",
+ "glib",
  "glib-build-tools",
  "gtk4",
  "libadwaita",

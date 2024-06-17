@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 adw = { version = "0.6.0", package = "libadwaita", features = ["v1_5"] }
 duct = "0.13.7"
+glib = "0.19.7"
 gtk = { version = "0.8.2", package = "gtk4", features = ["v4_14"] }
 linux-version = "0.1.1"
 serde_json = "1.0.117"

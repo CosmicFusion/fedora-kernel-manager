@@ -1,11 +1,13 @@
-use adw::prelude::ActionRowExt;
-use gtk::{Align, IconSize, Orientation, SelectionMode, SizeGroupMode};
-use gtk::prelude::{BoxExt, WidgetExt};
+use glib::*;
+use adw::prelude::*;
+use gtk::*;
+use gtk::prelude::*;
 use std::process::{Command, Stdio};
 use crate::{KernelBranch, RunningKernelInfo};
 use Vec;
 use std::fs;
 use std::path::Path;
+use adw::ExpanderRow;
 use duct::cmd;
 use version_compare::Version;
 
@@ -42,6 +44,8 @@ pub fn content() -> gtk::Box {
     let kernel_branch_expander_row = adw::ExpanderRow::builder()
         .build();
 
+    kernel_branch_expander_row.add_row(&kernel_branch_expandable(&kernel_branch_expander_row));
+
     let kernel_branch_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
         .hexpand(true)
@@ -62,6 +66,79 @@ pub fn content() -> gtk::Box {
     content_box.append(&kernel_branch_expander_row_boxedlist);
 
     content_box
+}
+
+fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
+    let searchbar = gtk::SearchEntry::builder()
+        .search_delay(500)
+        .build();
+
+    let boxedlist = gtk::ListBox::builder()
+        .selection_mode(SelectionMode::None)
+        .build();
+    boxedlist.add_css_class("boxedlist");
+
+    boxedlist.append(&searchbar);
+
+    let branch_container = gtk::ListBox::builder()
+        .selection_mode(SelectionMode::None)
+        .build();
+    branch_container.add_css_class("boxed-list");
+
+    let null_checkbutton = gtk::CheckButton::builder()
+        .label("No branch selected")
+        .build();
+
+    for branch in get_kernel_branches() {
+        let branch_checkbutton = gtk::CheckButton::builder()
+            .valign(Align::Center)
+            .can_focus(false)
+            .build();
+        let branch_row = adw::ActionRow::builder()
+            .activatable_widget(&branch_checkbutton)
+            .title(branch.name)
+            .build();
+        branch_row.add_prefix(&branch_checkbutton);
+        branch_checkbutton.set_group(Some(&null_checkbutton));
+        branch_container.append(&branch_row);
+        branch_checkbutton.connect_toggled(clone!(@weak branch_checkbutton, @weak expander_row => move |_| {
+            if branch_checkbutton.is_active() == true {
+                expander_row.set_title(&branch_row.title());
+            }
+        }));
+        //if current_keyboard.contains(&(keyboard_layout_clone)) {
+        //    keyboard_layout_checkbutton.set_active(true);
+        //}
+    }
+
+    let branch_container_viewport = gtk::ScrolledWindow::builder()
+        .child(&branch_container)
+        .build();
+
+    boxedlist.append(&branch_container_viewport);
+
+    searchbar.connect_search_changed(clone!(@weak searchbar, @weak branch_container => move |_| {
+        let mut counter = branch_container.first_child();
+        while let Some(row) = counter {
+            if row.widget_name() == "AdwActionRow" {
+                if !searchbar.text().is_empty() {
+                    if row.property::<String>("subtitle").to_lowercase().contains(&searchbar.text().to_string().to_lowercase()) || row.property::<String>("title").to_lowercase().contains(&searchbar.text().to_string().to_lowercase()) {
+                        //row.grab_focus();
+                        //row.add_css_class("highlight-widget");
+                        row.set_property("visible", true);
+                        searchbar.grab_focus();
+                    } else {
+                        row.set_property("visible", false);
+                    }
+                } else {
+                    row.set_property("visible", true);
+                }
+            }
+            counter = row.next_sibling();
+        }
+    }));
+
+    boxedlist
 }
 
 fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, group_size: &gtk::SizeGroup, group_size0: &gtk::SizeGroup, group_size1: &gtk::SizeGroup) -> gtk::ListBox {
@@ -194,6 +271,10 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
     else {
         "background-red-bg"
     };
+
+    while let Some(widget) = badge_box.last_child() {
+        badge_box.remove(&widget);
+    }
 
     badge_box.append(&create_kernel_badge("Kernel Branch", "cachy", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
     badge_box.append(&create_kernel_badge("Latest Version", "6.9", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
