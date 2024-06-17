@@ -153,8 +153,11 @@ fn get_running_kernel_info() -> RunningKernelInfo {
 fn get_current_scheduler(version: String) -> String {
     if Path::new("/sys/kernel/sched_ext/root/ops").exists() {
         println!("sched_ext is detected, getting scx scheduler");
-        let scx_sched = "sched_ext: ".to_string() + fs::read_to_string("/sys/kernel/sched_ext/root/ops").unwrap().as_str();
-        scx_sched
+        let scx_sched = match fs::read_to_string("/sys/kernel/sched_ext/root/ops") {
+            Ok(t) => t,
+            Err(_) => "unknown!".to_string()
+        };
+        "sched_ext: ".to_owned() + &scx_sched
     } else if bore_check() {
         "BORE".to_string()
     } else if Version::from(&version) >= Version::from("6.6")  {
