@@ -114,8 +114,10 @@ fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, gr
 fn get_kernel_branches() -> Vec<KernelBranch> {
     let test_branch = KernelBranch {
       name: "kernel-cachy".to_string(),
-        db: "".to_string()
+      db: "https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/db-kernel-cachy.json".to_string()
     };
+
+    vec![test_branch]
 }
 fn get_running_kernel_info() -> RunningKernelInfo {
     let kernel = match Command::new("uname").arg("-r").stdout(Stdio::piped()).output() {
