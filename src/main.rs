@@ -9,6 +9,11 @@ use crate::gdk::Display;
 const APP_ID: &str = "com.github.cosmicfusion.fedora-kernel-manager";
 const PRETTY_NAME: &str = "Fedora Kernel Manager";
 
+struct RunningKernelInfo {
+    version: String,
+    sched: String,
+}
+
 fn main() -> glib::ExitCode {
 
     let app = adw::Application::builder()

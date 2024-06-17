@@ -1,8 +1,12 @@
 use adw::prelude::ActionRowExt;
 use gtk::{Align, IconSize, Orientation, SelectionMode, SizeGroupMode};
 use gtk::prelude::{BoxExt, WidgetExt};
+use std::process::{Command, Stdio};
+use crate::RunningKernelInfo;
 
 pub fn content() -> gtk::Box {
+
+    let running_kernel_info = get_running_kernel_info();
 
     let content_box = gtk::Box::builder()
         .hexpand(true)
@@ -25,17 +29,19 @@ pub fn content() -> gtk::Box {
     tux_icon.add_css_class("symbolic-accent-bg");
 
     let kernel_badges_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
+    let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
+    let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
 
-    content_box.append(&create_kernel_badge("Kernel Branch", "cachy", "background-accent-bg", &kernel_badges_size_group));
-    content_box.append(&create_kernel_badge("Latest Version", "6.9", "background-accent-bg", &kernel_badges_size_group));
-    content_box.append(&create_kernel_badge("Running Version", "6.8.3", "background-salmon-bg", &kernel_badges_size_group));
-    content_box.append(&create_kernel_badge("Running Sched", "sched-ext: rusty", "background-accent-bg", &kernel_badges_size_group));
+    content_box.append(&create_kernel_badge("Kernel Branch", "cachy", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    content_box.append(&create_kernel_badge("Latest Version", "6.9", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    content_box.append(&create_kernel_badge("Running Version", &running_kernel_info.version, "background-salmon-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    content_box.append(&create_kernel_badge("Running Sched", &running_kernel_info.sched, "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
     content_box.append(&tux_icon);
 
     content_box
 }
 
-fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, group_size: &gtk::SizeGroup) -> gtk::ListBox {
+fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, group_size: &gtk::SizeGroup, group_size0: &gtk::SizeGroup, group_size1: &gtk::SizeGroup) -> gtk::ListBox {
     let badge_box = gtk::Box::builder()
         .build();
 
@@ -48,6 +54,7 @@ fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, gr
         .hexpand(true)
         .vexpand(true)
         .build();
+    group_size0.add_widget(&label0);
 
     let label_seprator = gtk::Separator::builder()
         .build();
@@ -61,6 +68,7 @@ fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, gr
         .hexpand(true)
         .vexpand(true)
         .build();
+    group_size1.add_widget(&label1);
 
     label1.add_css_class(css_style);
 
@@ -82,4 +90,20 @@ fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, gr
     boxedlist.append(&badge_box);
     group_size.add_widget(&boxedlist);
     boxedlist
+}
+
+fn get_running_kernel_info() -> RunningKernelInfo {
+    let version = match Command::new("uname").arg("-r").stdout(Stdio::piped()).output() {
+        Ok(t) =>  String::from_utf8(t.stdout).unwrap().trim().to_owned(),
+        Err(_) => "Unknown".to_string()
+    };
+
+    println!("{}", version);
+
+    let info = RunningKernelInfo {
+        version: version,
+        sched: "TODO".to_owned()
+    };
+
+    info
 }
