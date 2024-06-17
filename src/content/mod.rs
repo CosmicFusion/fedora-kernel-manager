@@ -57,6 +57,44 @@ pub fn content() -> gtk::Box {
         .margin_bottom(20)
         .margin_top(20)
         .build();
+
+    let button_box = gtk::Box::builder()
+        .orientation(Orientation::Horizontal)
+        .margin_start(10)
+        .margin_end(10)
+        .margin_bottom(20)
+        .margin_top(20)
+        .hexpand(true)
+        .halign(Align::Center)
+        .build();
+
+    let browse_kernels_button = gtk::Button::builder()
+        .icon_name("web")
+        .halign(Align::Start)
+        .margin_start(10)
+        .margin_end(10)
+        .height_request(50)
+        .width_request(50)
+        .tooltip_text("Browse Kernel for select branch")
+        .hexpand(true)
+        .build();
+    browse_kernels_button.add_css_class("circular");
+
+    let config_kernel_button = gtk::Button::builder()
+        .icon_name("settings")
+        .halign(Align::End)
+        .margin_start(10)
+        .margin_end(10)
+        .height_request(50)
+        .width_request(50)
+        .tooltip_text("Configure Sched_EXT settings")
+        .hexpand(true)
+        .build();
+    config_kernel_button.add_css_class("circular");
+
+    button_box.append(&browse_kernels_button);
+    button_box.append(&config_kernel_button);
+
     kernel_branch_expander_row_boxedlist.add_css_class("boxed-list");
     kernel_branch_expander_row_boxedlist.append(&kernel_branch_expander_row);
 
@@ -65,6 +103,7 @@ pub fn content() -> gtk::Box {
     content_box.append(&kernel_badge_box);
     content_box.append(&tux_icon);
     content_box.append(&kernel_branch_expander_row_boxedlist);
+    content_box.append(&button_box);
 
     content_box
 }

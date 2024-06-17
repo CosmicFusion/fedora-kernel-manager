@@ -1,5 +1,6 @@
 mod build_ui;
 mod content;
+mod sched_ext;
 
 use gtk::*;
 use adw::prelude::*;

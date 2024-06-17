@@ -47,8 +47,16 @@ pub fn build_ui(app: &adw::Application) {
     window_bottombar.append(&cancel_button);
     window_bottombar.append(&apply_button);
 
+    let content_stack = gtk::Stack::builder()
+        .transition_type(StackTransitionType::Crossfade)
+        .build();
+
+    content_stack.add_named(&content::content(), Some("content_page"));
+
+
+
     let window_toolbar = adw::ToolbarView::builder()
-        .content(&content::content())
+        .content(&content_stack)
         .build();
 
     window_toolbar.add_top_bar(&window_headerbar);
