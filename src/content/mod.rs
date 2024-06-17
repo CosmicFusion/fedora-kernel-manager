@@ -35,10 +35,27 @@ pub fn content() -> gtk::Box {
         .orientation(Orientation::Vertical)
         .build();
 
+    let kernel_branch_expander_row = adw::ExpanderRow::builder()
+        .build();
+
+    let kernel_branch_expander_row_boxedlist = gtk::ListBox::builder()
+        .selection_mode(SelectionMode::None)
+        .hexpand(true)
+        .vexpand(true)
+        .halign(Align::Center)
+        .margin_start(10)
+        .margin_end(10)
+        .margin_bottom(20)
+        .margin_top(20)
+        .build();
+    kernel_branch_expander_row_boxedlist.add_css_class("boxed-list");
+    kernel_branch_expander_row_boxedlist.append(&kernel_branch_expander_row);
+
     create_kernel_badges(&kernel_badge_box, &running_kernel_info);
 
     content_box.append(&kernel_badge_box);
     content_box.append(&tux_icon);
+    content_box.append(&kernel_branch_expander_row_boxedlist);
 
     content_box
 }
@@ -94,7 +111,12 @@ fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, gr
     boxedlist
 }
 
-//fn get_kernel_branches() -> Vec<KernelBranch> {}
+fn get_kernel_branches() -> Vec<KernelBranch> {
+    let test_branch = KernelBranch {
+      name: "kernel-cachy".to_string(),
+        db: "".to_string()
+    };
+}
 fn get_running_kernel_info() -> RunningKernelInfo {
     let kernel = match Command::new("uname").arg("-r").stdout(Stdio::piped()).output() {
         Ok(t) =>  String::from_utf8(t.stdout).unwrap().trim().to_owned(),
