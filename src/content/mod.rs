@@ -439,11 +439,8 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
     let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
     let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
 
-    //let json: serde_json::Value = serde_json::from_str(&selected_kernel_branch_clone.db).expect("Unable to parse");
-    //let kernel_version = json["latest_version"].as_str().expect("invalid json");
-
-    println!("sex: {}", &selected_kernel_branch_clone.db);
-    let kernel_version = "myass";
+    let json: serde_json::Value = serde_json::from_str(&selected_kernel_branch_clone.db).expect("Unable to parse");
+    let kernel_version = json["latest_version"].as_str().expect("invalid json");
 
     let version_css_style = if &running_kernel_info.version == &kernel_version {
         "background-green-bg"
