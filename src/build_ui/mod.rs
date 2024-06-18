@@ -1,7 +1,6 @@
 use crate::{content, kernel_pkg, sched_ext, KernelBranch, PRETTY_NAME};
 use adw::prelude::*;
 use adw::*;
-use async_channel::*;
 use glib::{clone, MainContext};
 use gtk::prelude::*;
 use gtk::*;
@@ -9,10 +8,11 @@ use std::cell::RefCell;
 use std::process::Command;
 use std::rc::Rc;
 use std::{thread, time};
+use glib::property::PropertyGet;
 
 pub fn build_ui(app: &adw::Application) {
     let internet_connected = Rc::new(RefCell::new(false));
-    let selected_kernel_branch: Rc<RefCell<KernelBranch>>;
+    let selected_kernel_branch: Rc<RefCell<KernelBranch>> = Rc::new(RefCell::new(KernelBranch{name: "?".to_owned(), db:"?".to_owned()}));
 
     let (internet_loop_sender, internet_loop_receiver) = async_channel::unbounded();
     let internet_loop_sender = internet_loop_sender.clone();
@@ -33,6 +33,8 @@ pub fn build_ui(app: &adw::Application) {
 
     let internet_connected_status = internet_connected.clone();
 
+    let selected_kernel_branch2 = selected_kernel_branch.clone();
+
     let internet_loop_context = MainContext::default();
     // The main loop executes the asynchronous block
     internet_loop_context.spawn_local(clone!(@weak window_banner => async move {
@@ -40,6 +42,7 @@ pub fn build_ui(app: &adw::Application) {
             let banner_text = "Warning: No internet connection";
             if state == true {
                 *internet_connected_status.borrow_mut()=true;
+                println!("{}", selected_kernel_branch.borrow().name);
                 if window_banner.title() == banner_text {
                     window_banner.set_revealed(false)
                 }
@@ -61,7 +64,9 @@ pub fn build_ui(app: &adw::Application) {
 
     let window_toolbar = adw::ToolbarView::builder().content(&content_stack).build();
 
-    content_stack.add_named(&content::content(&content_stack), Some("content_page"));
+    content_stack.add_named(
+        &content::content(&content_stack, &selected_kernel_branch2),
+        Some("content_page"));
     content_stack.add_named(
         &sched_ext::sched_ext_page(&content_stack),
         Some("sched_ext_page"),

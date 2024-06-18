@@ -17,6 +17,7 @@ struct RunningKernelInfo {
     sched: String,
 }
 
+#[derive(Clone)]
 struct KernelBranch {
     name: String,
     db: String,

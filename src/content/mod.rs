@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use crate::{KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
 use adw::ExpanderRow;
@@ -8,10 +9,13 @@ use gtk::*;
 use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::rc::Rc;
 use version_compare::Version;
+use homedir::get_my_home;
 use Vec;
+use glib::property::PropertyGet;
 
-pub fn content(content_stack: &gtk::Stack) -> gtk::Box {
+pub fn content(content_stack: &gtk::Stack, selected_kernel_branch: &Rc<RefCell<KernelBranch>>) -> gtk::Box {
     let running_kernel_info = get_running_kernel_info();
 
     let content_box = gtk::Box::builder()
@@ -44,7 +48,7 @@ pub fn content(content_stack: &gtk::Stack) -> gtk::Box {
         .subtitle("Kernel Branch")
         .build();
 
-    kernel_branch_expander_row.add_row(&kernel_branch_expandable(&kernel_branch_expander_row));
+    kernel_branch_expander_row.add_row(&kernel_branch_expandable(&kernel_branch_expander_row, selected_kernel_branch));
 
     let kernel_branch_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
@@ -134,6 +138,23 @@ pub fn content(content_stack: &gtk::Stack) -> gtk::Box {
         .label("Cancel Changes")
         .build();
 
+
+    let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
+    let selected_kernel_branch_clone1 = selected_kernel_branch.clone();
+
+    match get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch").exists() {
+      true => {
+          let narrow_branch: Vec<KernelBranch> = get_kernel_branches().clone().into_iter()
+              .filter(|a| a.name == fs::read_to_string(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).unwrap())
+              .collect();
+          *selected_kernel_branch_clone0.borrow_mut()=narrow_branch.get(0).unwrap().clone()
+      }
+        _ => {
+            let normal_branch = get_kernel_branches().clone().get(0).unwrap().clone();
+            *selected_kernel_branch_clone0.borrow_mut()=normal_branch
+        }
+    };
+
     cancel_button.add_css_class("pill");
 
     window_bottombar.append(&cancel_button);
@@ -144,7 +165,7 @@ pub fn content(content_stack: &gtk::Stack) -> gtk::Box {
     content_box
 }
 
-fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
+fn kernel_branch_expandable(expander_row: &adw::ExpanderRow, selected_kernel_branch: &Rc<RefCell<KernelBranch>>) -> gtk::ListBox {
     let searchbar = gtk::SearchEntry::builder().search_delay(500).build();
     searchbar.add_css_class("round-border-only-top");
 
@@ -164,6 +185,8 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
         .build();
 
     for branch in get_kernel_branches() {
+        let branch_clone0 = branch.clone();
+        let branch_clone1 = branch.clone();
         let branch_checkbutton = gtk::CheckButton::builder()
             .valign(Align::Center)
             .can_focus(false)
@@ -175,16 +198,21 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
         branch_row.add_prefix(&branch_checkbutton);
         branch_checkbutton.set_group(Some(&null_checkbutton));
         branch_container.append(&branch_row);
+        let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
         branch_checkbutton.connect_toggled(
             clone!(@weak branch_checkbutton, @weak expander_row => move |_| {
                 if branch_checkbutton.is_active() == true {
                     expander_row.set_title(&branch_row.title());
+                    save_branch_config(&branch_row.title().to_string());
+                    *selected_kernel_branch_clone0.borrow_mut()=branch_clone0.clone()
                 }
             }),
         );
-        //if current_keyboard.contains(&(keyboard_layout_clone)) {
-        //    keyboard_layout_checkbutton.set_active(true);
-        //}
+
+        match get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch").exists() {
+            true if fs::read_to_string(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).unwrap() == branch_clone1.name => branch_checkbutton.set_active(true),
+                _ => {}
+        }
     }
 
     let branch_container_viewport = gtk::ScrolledWindow::builder()
@@ -283,7 +311,7 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
     };
 
     let test_branch2 = KernelBranch {
-        name: "kernel-cachy".to_string(),
+        name: "kernel-tkg".to_string(),
         db: "https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/db-kernel-cachy.json".to_string()
     };
 
@@ -408,4 +436,15 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,
     ));
+}
+
+fn save_branch_config(branch: &str) {
+    let config_path = get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager");
+    match &config_path.exists() {
+        true => fs::write(config_path.join("branch"), branch).unwrap(),
+        _ => {
+            fs::create_dir(&config_path).unwrap();
+            fs::write(config_path.join("branch"), branch).unwrap();
+        }
+    }
 }
