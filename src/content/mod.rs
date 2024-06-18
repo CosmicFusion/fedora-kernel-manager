@@ -284,9 +284,12 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(branches) = &res["branches"] {
         for branch in branches {
-            let branch = KernelBranch{
+
+            println!("Downloading & Parsing package DB for {}.", branch.name);
+            let branch = KernelBranch {
                 name: branch["name"].as_str().to_owned().unwrap().to_string(),
-                db: branch["db"].as_str().to_owned().unwrap().to_string(),
+                db_url: branch["db_url"].as_str().to_owned().unwrap().to_string(),
+                db: reqwest::blocking::get(branch["db_url"].as_str().to_owned().unwrap().to_string(),).unwrap().text().unwrap()
             };
             kernel_branches_array.push(branch)
         }};
