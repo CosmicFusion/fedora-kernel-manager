@@ -2,7 +2,7 @@ use gtk::*;
 use gtk::prelude::*;
 use adw::*;
 use adw::prelude::*;
-use crate::{content, PRETTY_NAME};
+use crate::{content, PRETTY_NAME, sched_ext};
 
 pub fn build_ui(app: &adw::Application) {
     let window = adw::ApplicationWindow::new(app);
@@ -28,7 +28,8 @@ pub fn build_ui(app: &adw::Application) {
         .content(&content_stack)
         .build();
 
-    content_stack.add_named(&content::content(), Some("content_page"));
+    content_stack.add_named(&content::content(&content_stack), Some("content_page"));
+    content_stack.add_named(&sched_ext::sched_ext_page(&content_stack), Some("sched_ext_page"));
 
     window_toolbar.add_top_bar(&window_headerbar);
 

@@ -11,7 +11,7 @@ use adw::ExpanderRow;
 use duct::cmd;
 use version_compare::Version;
 
-pub fn content() -> gtk::Box {
+pub fn content(content_stack: &gtk::Stack) -> gtk::Box {
 
     let running_kernel_info = get_running_kernel_info();
 
@@ -91,6 +91,10 @@ pub fn content() -> gtk::Box {
         .hexpand(true)
         .build();
     config_kernel_button.add_css_class("circular");
+
+    config_kernel_button.connect_clicked(clone!(@weak content_stack => move |_| {
+        content_stack.set_visible_child_name("sched_ext_page")
+    }));
 
     button_box.append(&browse_kernels_button);
     button_box.append(&config_kernel_button);
@@ -213,7 +217,7 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
     boxedlist
 }
 
-fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, group_size: &gtk::SizeGroup, group_size0: &gtk::SizeGroup, group_size1: &gtk::SizeGroup) -> gtk::ListBox {
+pub fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, group_size: &gtk::SizeGroup, group_size0: &gtk::SizeGroup, group_size1: &gtk::SizeGroup) -> gtk::ListBox {
     let badge_box = gtk::Box::builder()
         .build();
 
@@ -277,7 +281,7 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
 
     vec![test_branch, test_branch2]
 }
-fn get_running_kernel_info() -> RunningKernelInfo {
+pub fn get_running_kernel_info() -> RunningKernelInfo {
     let kernel = match Command::new("uname").arg("-r").stdout(Stdio::piped()).output() {
         Ok(t) =>  String::from_utf8(t.stdout).unwrap().trim().to_owned(),
         Err(_) => "Unknown".to_string()
@@ -304,7 +308,7 @@ fn get_running_kernel_info() -> RunningKernelInfo {
     info
 }
 
-fn get_current_scheduler(version: String) -> String {
+pub fn get_current_scheduler(version: String) -> String {
     if Path::new("/sys/kernel/sched_ext/root/ops").exists() {
         println!("sched_ext is detected, getting scx scheduler");
         let scx_sched = match fs::read_to_string("/sys/kernel/sched_ext/root/ops") {

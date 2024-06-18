@@ -1,0 +1,43 @@
+{
+  "scx_schedulers": [
+    {
+      "name": "scx_disabled"
+    },
+    {
+      "name": "scx_central"
+    },
+    {
+      "name": "scx_flatcg"
+    },
+    {
+      "name": "scx_lavd"
+    },
+    {
+      "name": "scx_layered"
+    },
+    {
+      "name": "scx_nest"
+    },
+    {
+      "name": "scx_pair"
+    },
+    {
+      "name": "scx_qmap"
+    },
+    {
+      "name": "scx_rlfifo"
+    },
+    {
+      "name": "scx_rustland"
+    },
+    {
+      "name": "scx_rusty"
+    },
+    {
+      "name": "scx_simple"
+    },
+    {
+      "name": "scx_userland"
+    }
+  ]
+}
