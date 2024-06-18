@@ -20,6 +20,7 @@ pub fn content(
     content_stack: &gtk::Stack,
     selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
     db_load_complete: &Rc<RefCell<bool>>,
+    window: &adw::ApplicationWindow,
 ) -> gtk::Box {
     let running_kernel_info = get_running_kernel_info();
 
@@ -98,7 +99,6 @@ pub fn content(
     let kernel_branch_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
         .hexpand(true)
-        .vexpand(true)
         .halign(Align::Center)
         .margin_start(10)
         .margin_end(10)
@@ -128,9 +128,9 @@ pub fn content(
         .build();
     browse_kernels_button.add_css_class("circular");
 
-    browse_kernels_button.connect_clicked(clone!(@weak content_stack, @strong selected_kernel_branch => move |_| {
+    browse_kernels_button.connect_clicked(clone!(@weak window, @weak content_stack, @strong selected_kernel_branch => move |_| {
             content_stack.add_named(
-        &kernel_pkg::kernel_pkg_page(&content_stack, &selected_kernel_branch),
+        &kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch),
         Some("kernel_pkg_page"),
     );
         content_stack.set_visible_child_name("kernel_pkg_page")

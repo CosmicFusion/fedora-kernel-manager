@@ -326,6 +326,7 @@ dependencies = [
  "homedir",
  "libadwaita",
  "linux-version",
+ "os_pipe",
  "reqwest",
  "serde_json",
  "version-compare",

@@ -68,8 +68,16 @@ pub fn build_ui(app: &adw::Application) {
 
     let window_toolbar = adw::ToolbarView::builder().content(&content_stack).build();
 
+    let window = adw::ApplicationWindow::builder()
+        .application(app)
+        .content(&window_toolbar)
+        .width_request(600)
+        .height_request(600)
+        .resizable(false)
+        .build();
+
     content_stack.add_named(
-        &content::content(&content_stack, &selected_kernel_branch2, &db_load_complete),
+        &content::content(&content_stack, &selected_kernel_branch2, &db_load_complete, &window),
         Some("content_page"),
     );
     content_stack.add_named(
@@ -79,14 +87,6 @@ pub fn build_ui(app: &adw::Application) {
 
     window_toolbar.add_top_bar(&window_headerbar);
     window_toolbar.add_top_bar(&window_banner);
-
-    let window = adw::ApplicationWindow::builder()
-        .application(app)
-        .content(&window_toolbar)
-        .width_request(600)
-        .height_request(600)
-        .resizable(false)
-        .build();
 
     load_icon_theme(&window);
 
