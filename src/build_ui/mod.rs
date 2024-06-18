@@ -77,7 +77,12 @@ pub fn build_ui(app: &adw::Application) {
         .build();
 
     content_stack.add_named(
-        &content::content(&content_stack, &selected_kernel_branch2, &db_load_complete, &window),
+        &content::content(
+            &content_stack,
+            &selected_kernel_branch2,
+            &db_load_complete,
+            &window,
+        ),
         Some("content_page"),
     );
     content_stack.add_named(

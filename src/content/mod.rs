@@ -9,10 +9,10 @@ use gtk::prelude::*;
 use gtk::*;
 use homedir::get_my_home;
 use std::cell::RefCell;
-use std::{fs, time};
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
+use std::{fs, time};
 use version_compare::Version;
 use Vec;
 
@@ -128,13 +128,15 @@ pub fn content(
         .build();
     browse_kernels_button.add_css_class("circular");
 
-    browse_kernels_button.connect_clicked(clone!(@weak window, @weak content_stack, @strong selected_kernel_branch => move |_| {
-            content_stack.add_named(
-        &kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch),
-        Some("kernel_pkg_page"),
+    browse_kernels_button.connect_clicked(
+        clone!(@weak window, @weak content_stack, @strong selected_kernel_branch => move |_| {
+                content_stack.add_named(
+            &kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch),
+            Some("kernel_pkg_page"),
+        );
+            content_stack.set_visible_child_name("kernel_pkg_page")
+        }),
     );
-        content_stack.set_visible_child_name("kernel_pkg_page")
-    }));
 
     let config_kernel_button = gtk::Button::builder()
         .icon_name("settings")
@@ -163,7 +165,6 @@ pub fn content(
     content_box.append(&tux_icon);
     content_box.append(&kernel_branch_expander_row_boxedlist);
     content_box.append(&button_box);
-
 
     let (load_badge_async_sender, load_badge_async_receiver) = async_channel::unbounded();
     let load_badge_async_sender = load_badge_async_sender.clone();
@@ -243,24 +244,12 @@ for branch in data {
             }),
         );
 
-        match get_my_home()
-            .unwrap()
-            .unwrap()
-            .join(".config/fedora-kernel-manager/branch")
-            .exists()
-        {
-            true if fs::read_to_string(
-                get_my_home()
-                    .unwrap()
-                    .unwrap()
-                    .join(".config/fedora-kernel-manager/branch"),
-            )
-            .unwrap()
-                == branch_clone1.name =>
+        match get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch").exists() {
+            true if fs::read_to_string(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).unwrap()== branch_clone1.name && std::fs::metadata(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).expect("file metadata not found").len() == 0 =>
             {
                 branch_checkbutton.set_active(true)
             }
-            _ => {}
+            _ => branch_container.first_child().unwrap().property::<gtk::CheckButton>("activatable_widget").set_property("active", true),
         };
 
                 *db_load_complete.borrow_mut() = true;
@@ -450,18 +439,24 @@ fn bore_check() -> bool {
     is_bore
 }
 
-fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKernelInfo, selected_kernel_branch: &Rc<RefCell<KernelBranch>>) {
+fn create_kernel_badges(
+    badge_box: &gtk::Box,
+    running_kernel_info: &RunningKernelInfo,
+    selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
+) {
     let selected_kernel_branch_clone = selected_kernel_branch.borrow().clone();
 
     let kernel_badges_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
     let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
     let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
 
-    let json: serde_json::Value = serde_json::from_str(&selected_kernel_branch_clone.db).expect("Unable to parse");
+    dbg!(&selected_kernel_branch_clone.db);
+    let json: serde_json::Value =
+        serde_json::from_str(&selected_kernel_branch_clone.db).expect("Unable to parse");
 
     let kernel_version = match json["latest_version"].as_str() {
-      Some(t) => t,
-      _ => "Unknown"
+        Some(t) => t,
+        _ => "Unknown",
     };
 
     let version_css_style = if &running_kernel_info.version == &kernel_version {

@@ -1,21 +1,25 @@
-use std::io::BufReader;
-use duct::cmd;
-use std::process::Command;
-use std::cell::RefCell;
 use crate::content::get_running_kernel_info;
 use crate::{KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
+use duct::cmd;
 use glib::*;
 use gtk::prelude::*;
 use gtk::*;
+use std::cell::RefCell;
+use std::error::Error;
 use std::fs;
 use std::fs::*;
+use std::io::BufRead;
+use std::io::BufReader;
+use std::process::Command;
 use std::rc::Rc;
 use std::time::*;
-use std::error::Error;
-use std::io::BufRead;
 
-pub fn kernel_pkg_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindow, selected_kernel_branch: &Rc<RefCell<KernelBranch>>) -> gtk::Box {
+pub fn kernel_pkg_page(
+    content_stack: &gtk::Stack,
+    window: &adw::ApplicationWindow,
+    selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
+) -> gtk::Box {
     let selected_kernel_branch_clone0 = selected_kernel_branch.borrow().clone();
 
     let main_box = gtk::Box::builder()
@@ -25,7 +29,10 @@ pub fn kernel_pkg_page(content_stack: &gtk::Stack, window: &adw::ApplicationWind
         .build();
 
     let main_label = gtk::Label::builder()
-        .label(format!("Available Kernel Packages for {}", &selected_kernel_branch_clone0.name))
+        .label(format!(
+            "Available Kernel Packages for {}",
+            &selected_kernel_branch_clone0.name
+        ))
         .hexpand(true)
         .margin_start(10)
         .margin_end(10)
@@ -49,7 +56,12 @@ pub fn kernel_pkg_page(content_stack: &gtk::Stack, window: &adw::ApplicationWind
         .build();
     packages_boxedlist.add_css_class("boxed-list");
     let rows_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
-    add_package_rows(&packages_boxedlist, &selected_kernel_branch_clone0.db, &window, &rows_size_group);
+    add_package_rows(
+        &packages_boxedlist,
+        &selected_kernel_branch_clone0.db,
+        &window,
+        &rows_size_group,
+    );
 
     let packages_viewport = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(PolicyType::Never)
@@ -96,17 +108,22 @@ pub fn kernel_pkg_page(content_stack: &gtk::Stack, window: &adw::ApplicationWind
     main_box
 }
 
-fn add_package_rows(boxedlist: &gtk::ListBox,
-                    data: &str,
-                    window: &adw::ApplicationWindow,
-                    rows_size_group: &gtk::SizeGroup,
+fn add_package_rows(
+    boxedlist: &gtk::ListBox,
+    data: &str,
+    window: &adw::ApplicationWindow,
+    rows_size_group: &gtk::SizeGroup,
 ) {
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(kernels) = &res["kernels"] {
         for kernel in kernels {
             let kernel_name = kernel["name"].as_str().to_owned().unwrap().to_string();
             let kernel_package = kernel["package"].as_str().to_owned().unwrap().to_string();
-            let kernel_description = kernel["description"].as_str().to_owned().unwrap().to_string();
+            let kernel_description = kernel["description"]
+                .as_str()
+                .to_owned()
+                .unwrap()
+                .to_string();
 
             let (log_loop_sender, log_loop_receiver) = async_channel::unbounded();
             let log_loop_sender: async_channel::Sender<String> = log_loop_sender.clone();
@@ -115,13 +132,14 @@ fn add_package_rows(boxedlist: &gtk::ListBox,
             let log_status_loop_sender: async_channel::Sender<bool> =
                 log_status_loop_sender.clone();
 
-            let (kernel_status_loop_sender, kernel_status_loop_receiver) = async_channel::unbounded();
+            let (kernel_status_loop_sender, kernel_status_loop_receiver) =
+                async_channel::unbounded();
             let kernel_status_loop_sender: async_channel::Sender<bool> =
                 kernel_status_loop_sender.clone();
 
             std::thread::spawn(move || loop {
-               // let command_installed_status = std::Command::new("dpkg")
-               //     .args(["-s", &kernel_package_ind2])
+                // let command_installed_status = std::Command::new("dpkg")
+                //     .args(["-s", &kernel_package_ind2])
                 //    .output()
                 //    .unwrap();
                 //if command_installed_status.status.success() {
@@ -130,22 +148,20 @@ fn add_package_rows(boxedlist: &gtk::ListBox,
                 //    kernel_status_loop_sender.send_blocking(false).expect("channel needs to be open")
                 //}
                 std::thread::sleep(Duration::from_secs(6));
-                kernel_status_loop_sender.send_blocking(true).expect("channel needs to be open")
+                kernel_status_loop_sender
+                    .send_blocking(true)
+                    .expect("channel needs to be open")
             });
-            
+
             let kernel_expander_row = adw::ExpanderRow::new();
-            let kernel_package_label = gtk::Label::builder()
-                .label(&kernel_package)
-                .build();
+            let kernel_package_label = gtk::Label::builder().label(&kernel_package).build();
             let kernel_status_icon = gtk::Image::builder()
                 .icon_name("emblem-default")
                 .pixel_size(24)
                 .visible(false)
                 .tooltip_text("Installed")
                 .build();
-            let kernel_description_label = gtk::Label::builder()
-                .label(&kernel_description)
-                .build();
+            let kernel_description_label = gtk::Label::builder().label(&kernel_description).build();
             let kernel_content_row = adw::ActionRow::builder().build();
             let kernel_install_button = gtk::Button::builder()
                 .margin_start(5)
@@ -221,14 +237,9 @@ fn add_package_rows(boxedlist: &gtk::ListBox,
                 .height_request(200)
                 .heading("Installing Kernel")
                 .build();
-            kernel_install_dialog.add_response(
-                "kernel_install_dialog_ok",
-                "OK",
-            );
-            kernel_install_dialog.add_response(
-                "kernel_install_dialog_reboot",
-                "Reboot Now (Optional)",
-            );
+            kernel_install_dialog.add_response("kernel_install_dialog_ok", "OK");
+            kernel_install_dialog
+                .add_response("kernel_install_dialog_reboot", "Reboot Now (Optional)");
             kernel_install_dialog.set_response_appearance(
                 "kernel_install_dialog_reboot",
                 adw::ResponseAppearance::Suggested,
@@ -333,7 +344,8 @@ fn add_package_rows(boxedlist: &gtk::ListBox,
             }));
             //
             boxedlist.append(&kernel_expander_row);
-        }};
+        }
+    };
 }
 
 const KERNEL_MODIFY_PROG: &str = r###"
