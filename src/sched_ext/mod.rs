@@ -32,6 +32,16 @@ pub fn sched_ext_page(content_stack: &gtk::Stack) -> gtk::Box {
 
     main_icon.add_css_class("symbolic-accent-bg");
 
+    let main_label = gtk::Label::builder()
+        .label("Sched-EXT Configuration Settings")
+        .hexpand(true)
+        .margin_start(10)
+        .margin_end(10)
+        .margin_bottom(20)
+        .margin_top(20)
+        .build();
+    main_label.add_css_class("symbolic-accent-bg");
+
     let badge_box = gtk::Box::builder()
         .hexpand(true)
         .valign(Align::Start)
@@ -67,9 +77,49 @@ pub fn sched_ext_page(content_stack: &gtk::Stack) -> gtk::Box {
     scx_sched_expander_row_boxedlist.add_css_class("boxed-list");
     scx_sched_expander_row_boxedlist.append(&scx_sched_expander_row);
 
+    let window_bottombar = gtk::Box::builder()
+        .hexpand(true)
+        .homogeneous(true)
+        .margin_bottom(15)
+        .margin_start(15)
+        .margin_end(15)
+        .margin_start(15)
+        .build();
+
+    let back_button = gtk::Button::builder()
+        .halign(Align::Start)
+        .label("Back")
+        .build();
+
+    back_button.add_css_class("pill");
+
+    back_button.connect_clicked(clone!(@weak content_stack => move |_| {
+        content_stack.set_visible_child_name("content_page")
+    }));
+
+    let apply_button = gtk::Button::builder()
+        .halign(Align::End)
+        .label("Apply Changes")
+        .build();
+
+    apply_button.add_css_class("pill");
+    apply_button.add_css_class("destructive-action");
+
+    let cancel_button = gtk::Button::builder()
+        .halign(Align::End)
+        .label("Cancel Changes")
+        .build();
+    cancel_button.add_css_class("pill");
+
+    window_bottombar.append(&back_button);
+    window_bottombar.append(&cancel_button);
+    window_bottombar.append(&apply_button);
+
     main_box.append(&badge_box);
     main_box.append(&scx_sched_expander_row_boxedlist);
     main_box.append(&main_icon);
+    main_box.append(&main_label);
+    main_box.append(&window_bottombar);
 
     main_box
 }
@@ -150,7 +200,7 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
     let branch_container_viewport = gtk::ScrolledWindow::builder()
         .child(&sched_container)
         .hscrollbar_policy(PolicyType::Never)
-        .height_request(250)
+        .height_request(160)
         .build();
 
     sched_container.add_css_class("round-border-only-bottom");
