@@ -126,7 +126,7 @@ pub fn content(
     kernel_branch_expander_row_boxedlist.add_css_class("boxed-list");
     kernel_branch_expander_row_boxedlist.append(&kernel_branch_expander_row);
 
-    create_kernel_badges(&kernel_badge_box, &running_kernel_info);
+    create_kernel_badges(&kernel_badge_box, &running_kernel_info, &selected_kernel_branch);
 
     content_box.append(&kernel_badge_box);
     content_box.append(&tux_icon);
@@ -432,14 +432,20 @@ fn bore_check() -> bool {
     is_bore
 }
 
-fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKernelInfo) {
+fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKernelInfo, selected_kernel_branch: &Rc<RefCell<KernelBranch>>) {
+    let selected_kernel_branch_clone = selected_kernel_branch.borrow().clone();
+
     let kernel_badges_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
     let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
     let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
 
-    let kernel_version = "6.9";
+    //let json: serde_json::Value = serde_json::from_str(&selected_kernel_branch_clone.db).expect("Unable to parse");
+    //let kernel_version = json["latest_version"].as_str().expect("invalid json");
 
-    let version_css_style = if &running_kernel_info.version.as_str() == &kernel_version {
+    println!("sex: {}", &selected_kernel_branch_clone.db);
+    let kernel_version = "myass";
+
+    let version_css_style = if &running_kernel_info.version == &kernel_version {
         "background-green-bg"
     } else {
         "background-red-bg"
@@ -451,7 +457,7 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
 
     badge_box.append(&create_kernel_badge(
         "Kernel Branch",
-        "cachy",
+        &selected_kernel_branch_clone.name,
         "background-accent-bg",
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
@@ -459,7 +465,7 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
     ));
     badge_box.append(&create_kernel_badge(
         "Latest Version",
-        "6.9",
+        kernel_version,
         "background-accent-bg",
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
