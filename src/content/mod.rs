@@ -105,6 +105,35 @@ pub fn content() -> gtk::Box {
     content_box.append(&kernel_branch_expander_row_boxedlist);
     content_box.append(&button_box);
 
+    let window_bottombar = gtk::Box::builder()
+        .hexpand(true)
+        .homogeneous(true)
+        .margin_bottom(15)
+        .margin_start(15)
+        .margin_end(15)
+        .margin_start(15)
+        .build();
+
+    let apply_button = gtk::Button::builder()
+        .halign(Align::End)
+        .label("Apply Changes")
+        .build();
+
+    apply_button.add_css_class("pill");
+    apply_button.add_css_class("destructive-action");
+
+    let cancel_button = gtk::Button::builder()
+        .halign(Align::Start)
+        .label("Cancel Changes")
+        .build();
+
+    cancel_button.add_css_class("pill");
+
+    window_bottombar.append(&cancel_button);
+    window_bottombar.append(&apply_button);
+
+    content_box.append(&window_bottombar);
+
     content_box
 }
 

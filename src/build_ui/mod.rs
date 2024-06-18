@@ -20,47 +20,17 @@ pub fn build_ui(app: &adw::Application) {
         .title_widget(&adw::WindowTitle::builder().title(PRETTY_NAME).build())
         .build();
 
-    let window_bottombar = gtk::Box::builder()
-        .hexpand(true)
-        .homogeneous(true)
-        .margin_bottom(15)
-        .margin_start(15)
-        .margin_end(15)
-        .margin_start(15)
-        .build();
-
-    let apply_button = gtk::Button::builder()
-        .halign(Align::End)
-        .label("Apply Changes")
-        .build();
-
-    apply_button.add_css_class("pill");
-    apply_button.add_css_class("destructive-action");
-
-    let cancel_button = gtk::Button::builder()
-        .halign(Align::Start)
-        .label("Cancel Changes")
-        .build();
-
-    cancel_button.add_css_class("pill");
-
-    window_bottombar.append(&cancel_button);
-    window_bottombar.append(&apply_button);
-
     let content_stack = gtk::Stack::builder()
         .transition_type(StackTransitionType::Crossfade)
         .build();
-
-    content_stack.add_named(&content::content(), Some("content_page"));
-
-
 
     let window_toolbar = adw::ToolbarView::builder()
         .content(&content_stack)
         .build();
 
+    content_stack.add_named(&content::content(), Some("content_page"));
+
     window_toolbar.add_top_bar(&window_headerbar);
-    window_toolbar.add_bottom_bar(&window_bottombar);
 
     let window = adw::ApplicationWindow::builder()
         .application(app)
