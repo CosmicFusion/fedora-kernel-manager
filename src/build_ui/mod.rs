@@ -17,6 +17,7 @@ pub fn build_ui(app: &adw::Application) {
         db_url: "?".to_owned(),
         db: "?".to_owned(),
     }));
+    let db_load_complete = Rc::new(RefCell::new(false));
 
     let (internet_loop_sender, internet_loop_receiver) = async_channel::unbounded();
     let internet_loop_sender = internet_loop_sender.clone();
@@ -46,7 +47,6 @@ pub fn build_ui(app: &adw::Application) {
             let banner_text = "Warning: No internet connection";
             if state == true {
                 *internet_connected_status.borrow_mut()=true;
-                println!("{}", selected_kernel_branch.borrow().name);
                 if window_banner.title() == banner_text {
                     window_banner.set_revealed(false)
                 }
@@ -69,7 +69,7 @@ pub fn build_ui(app: &adw::Application) {
     let window_toolbar = adw::ToolbarView::builder().content(&content_stack).build();
 
     content_stack.add_named(
-        &content::content(&content_stack, &selected_kernel_branch2),
+        &content::content(&content_stack, &selected_kernel_branch2, &db_load_complete),
         Some("content_page"),
     );
     content_stack.add_named(

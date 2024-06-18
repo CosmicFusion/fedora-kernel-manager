@@ -9,7 +9,7 @@ use gtk::prelude::*;
 use gtk::*;
 use homedir::get_my_home;
 use std::cell::RefCell;
-use std::fs;
+use std::{fs, time};
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
@@ -19,6 +19,7 @@ use Vec;
 pub fn content(
     content_stack: &gtk::Stack,
     selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
+    db_load_complete: &Rc<RefCell<bool>>,
 ) -> gtk::Box {
     let running_kernel_info = get_running_kernel_info();
 
@@ -30,6 +31,31 @@ pub fn content(
             .send_blocking(get_kernel_branches())
             .expect("channel needs to be open.");
     });
+
+    let loading_spinner = gtk::Spinner::builder()
+        .hexpand(true)
+        .valign(Align::Start)
+        .halign(Align::Center)
+        .spinning(true)
+        .height_request(128)
+        .width_request(128)
+        .build();
+
+    let loading_label = gtk::Label::builder()
+        .hexpand(true)
+        .valign(Align::Start)
+        .halign(Align::Center)
+        .label("Downloading Database...")
+        .build();
+
+    let loading_box = gtk::Box::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .orientation(Orientation::Vertical)
+        .build();
+
+    loading_box.append(&loading_spinner);
+    loading_box.append(&loading_label);
 
     let content_box = gtk::Box::builder()
         .hexpand(true)
@@ -64,6 +90,7 @@ pub fn content(
     kernel_branch_expander_row.add_row(&kernel_branch_expandable(
         &kernel_branch_expander_row,
         selected_kernel_branch,
+        db_load_complete,
         get_kernel_branches_receiver.clone(),
     ));
 
@@ -126,53 +153,33 @@ pub fn content(
     kernel_branch_expander_row_boxedlist.add_css_class("boxed-list");
     kernel_branch_expander_row_boxedlist.append(&kernel_branch_expander_row);
 
-    create_kernel_badges(&kernel_badge_box, &running_kernel_info, &selected_kernel_branch);
-
+    content_box.append(&loading_box);
     content_box.append(&kernel_badge_box);
     content_box.append(&tux_icon);
     content_box.append(&kernel_branch_expander_row_boxedlist);
     content_box.append(&button_box);
 
-    let get_kernel_branches_loop_context = MainContext::default();
-    // The main loop executes the asynchronous block
-    get_kernel_branches_loop_context.spawn_local(
-        clone!(@strong selected_kernel_branch => async move {
-            while let Ok(data) = get_kernel_branches_receiver.recv().await {
-                let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
-                let selected_kernel_branch_clone1 = selected_kernel_branch.clone();
 
-                match get_my_home()
-                    .unwrap()
-                    .unwrap()
-                    .join(".config/fedora-kernel-manager/branch")
-                    .exists()
-                {
-                    true => {
-                        let narrow_branch: Vec<KernelBranch> = data
-                            .clone()
-                            .into_iter()
-                            .filter(|a| {
-                                a.name
-                                    == fs::read_to_string(
-                                        get_my_home()
-                                            .unwrap()
-                                            .unwrap()
-                                            .join(".config/fedora-kernel-manager/branch"),
-                                    )
-                                    .unwrap()
-                            })
-                            .collect();
-                        *selected_kernel_branch_clone0.borrow_mut() =
-                            narrow_branch.get(0).unwrap().clone()
-                    }
-                    _ => {
-                        let normal_branch = data.clone().get(0).unwrap().clone();
-                        *selected_kernel_branch_clone0.borrow_mut() = normal_branch
-                    }
-                };
+    let (load_badge_async_sender, load_badge_async_receiver) = async_channel::unbounded();
+    let load_badge_async_sender = load_badge_async_sender.clone();
+    // The long running operation runs now in a separate thread
+    std::thread::spawn(move || loop {
+        load_badge_async_sender
+            .send_blocking(true)
+            .expect("The channel needs to be open.");
+        std::thread::sleep(time::Duration::from_secs(5));
+    });
+
+    let load_badge_async_context = MainContext::default();
+    // The main loop executes the asynchronous block
+    load_badge_async_context.spawn_local(clone!(@weak kernel_badge_box, @strong selected_kernel_branch, @strong db_load_complete => async move {
+            while let Ok(_state) = load_badge_async_receiver.recv().await {
+            if *db_load_complete.borrow() == true {
+                create_kernel_badges(&kernel_badge_box, &running_kernel_info, &selected_kernel_branch);
+                loading_box.set_visible(false)
             }
-        }),
-    );
+            }
+    }));
 
     content_box
 }
@@ -180,6 +187,7 @@ pub fn content(
 fn kernel_branch_expandable(
     expander_row: &adw::ExpanderRow,
     selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
+    db_load_complete: &Rc<RefCell<bool>>,
     get_kernel_branches_receiver: Receiver<Vec<KernelBranch>>,
 ) -> gtk::ListBox {
     let searchbar = gtk::SearchEntry::builder().search_delay(500).build();
@@ -202,7 +210,7 @@ fn kernel_branch_expandable(
 
     let get_kernel_branches_loop_context = MainContext::default();
     // The main loop executes the asynchronous block
-    get_kernel_branches_loop_context.spawn_local(clone!(@weak expander_row, @weak branch_container, @strong selected_kernel_branch => async move {
+    get_kernel_branches_loop_context.spawn_local(clone!(@weak expander_row, @weak branch_container, @strong selected_kernel_branch, @strong db_load_complete => async move {
         while let Ok(data) = get_kernel_branches_receiver.recv().await {
 for branch in data {
         let branch_clone0 = branch.clone();
@@ -247,7 +255,10 @@ for branch in data {
                 branch_checkbutton.set_active(true)
             }
             _ => {}
-        }
+        };
+
+                *db_load_complete.borrow_mut() = true;
+                println!("DB load complete!")
     }
         }
     }));
@@ -364,6 +375,7 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
                 .text()
                 .unwrap(),
             };
+            println!("Download Complete!");
             kernel_branches_array.push(branch)
         }
     };
@@ -440,7 +452,11 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
     let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
 
     let json: serde_json::Value = serde_json::from_str(&selected_kernel_branch_clone.db).expect("Unable to parse");
-    let kernel_version = json["latest_version"].as_str().expect("invalid json");
+
+    let kernel_version = match json["latest_version"].as_str() {
+      Some(t) => t,
+      _ => "Unknown"
+    };
 
     let version_css_style = if &running_kernel_info.version == &kernel_version {
         "background-green-bg"
