@@ -76,10 +76,6 @@ pub fn build_ui(app: &adw::Application) {
         &sched_ext::sched_ext_page(&content_stack),
         Some("sched_ext_page"),
     );
-    content_stack.add_named(
-        &kernel_pkg::kernel_pkg_page(&content_stack),
-        Some("kernel_pkg_page"),
-    );
 
     window_toolbar.add_top_bar(&window_headerbar);
     window_toolbar.add_top_bar(&window_banner);

@@ -1,4 +1,4 @@
-use crate::{KernelBranch, RunningKernelInfo};
+use crate::{kernel_pkg, KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
 use adw::ExpanderRow;
 use async_channel::Receiver;
@@ -61,6 +61,7 @@ pub fn content(
         .hexpand(true)
         .vexpand(true)
         .orientation(Orientation::Vertical)
+        .sensitive(false)
         .build();
 
     let tux_icon = gtk::Image::builder()
@@ -128,6 +129,10 @@ pub fn content(
     browse_kernels_button.add_css_class("circular");
 
     browse_kernels_button.connect_clicked(clone!(@weak content_stack => move |_| {
+            content_stack.add_named(
+        &kernel_pkg::kernel_pkg_page(&content_stack),
+        Some("kernel_pkg_page"),
+    );
         content_stack.set_visible_child_name("kernel_pkg_page")
     }));
 
@@ -172,11 +177,12 @@ pub fn content(
 
     let load_badge_async_context = MainContext::default();
     // The main loop executes the asynchronous block
-    load_badge_async_context.spawn_local(clone!(@weak kernel_badge_box, @strong selected_kernel_branch, @strong db_load_complete => async move {
+    load_badge_async_context.spawn_local(clone!(@weak content_box, @weak loading_box, @weak kernel_badge_box, @strong selected_kernel_branch, @strong db_load_complete => async move {
             while let Ok(_state) = load_badge_async_receiver.recv().await {
             if *db_load_complete.borrow() == true {
                 create_kernel_badges(&kernel_badge_box, &running_kernel_info, &selected_kernel_branch);
-                loading_box.set_visible(false)
+                loading_box.set_visible(false);
+                content_box.set_sensitive(true)
             }
             }
     }));
