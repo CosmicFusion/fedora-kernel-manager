@@ -1,22 +1,35 @@
-use std::cell::RefCell;
 use crate::{KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
 use adw::ExpanderRow;
+use async_channel::Receiver;
 use duct::cmd;
+use glib::property::PropertyGet;
 use glib::*;
 use gtk::prelude::*;
 use gtk::*;
+use homedir::get_my_home;
+use std::cell::RefCell;
 use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::rc::Rc;
 use version_compare::Version;
-use homedir::get_my_home;
 use Vec;
-use glib::property::PropertyGet;
 
-pub fn content(content_stack: &gtk::Stack, selected_kernel_branch: &Rc<RefCell<KernelBranch>>) -> gtk::Box {
+pub fn content(
+    content_stack: &gtk::Stack,
+    selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
+) -> gtk::Box {
     let running_kernel_info = get_running_kernel_info();
+
+    let (get_kernel_branches_sender, get_kernel_branches_receiver) = async_channel::unbounded();
+    let get_kernel_branches_sender = get_kernel_branches_sender.clone();
+
+    std::thread::spawn(move || {
+        get_kernel_branches_sender
+            .send_blocking(get_kernel_branches())
+            .expect("channel needs to be open.");
+    });
 
     let content_box = gtk::Box::builder()
         .hexpand(true)
@@ -48,7 +61,11 @@ pub fn content(content_stack: &gtk::Stack, selected_kernel_branch: &Rc<RefCell<K
         .subtitle("Kernel Branch")
         .build();
 
-    kernel_branch_expander_row.add_row(&kernel_branch_expandable(&kernel_branch_expander_row, selected_kernel_branch));
+    kernel_branch_expander_row.add_row(&kernel_branch_expandable(
+        &kernel_branch_expander_row,
+        selected_kernel_branch,
+        get_kernel_branches_receiver.clone(),
+    ));
 
     let kernel_branch_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
@@ -116,27 +133,55 @@ pub fn content(content_stack: &gtk::Stack, selected_kernel_branch: &Rc<RefCell<K
     content_box.append(&kernel_branch_expander_row_boxedlist);
     content_box.append(&button_box);
 
+    let get_kernel_branches_loop_context = MainContext::default();
+    // The main loop executes the asynchronous block
+    get_kernel_branches_loop_context.spawn_local(
+        clone!(@strong selected_kernel_branch => async move {
+            while let Ok(data) = get_kernel_branches_receiver.recv().await {
+                let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
+                let selected_kernel_branch_clone1 = selected_kernel_branch.clone();
 
-    let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
-    let selected_kernel_branch_clone1 = selected_kernel_branch.clone();
-
-    match get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch").exists() {
-      true => {
-          let narrow_branch: Vec<KernelBranch> = get_kernel_branches().clone().into_iter()
-              .filter(|a| a.name == fs::read_to_string(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).unwrap())
-              .collect();
-          *selected_kernel_branch_clone0.borrow_mut()=narrow_branch.get(0).unwrap().clone()
-      }
-        _ => {
-            let normal_branch = get_kernel_branches().clone().get(0).unwrap().clone();
-            *selected_kernel_branch_clone0.borrow_mut()=normal_branch
-        }
-    };
+                match get_my_home()
+                    .unwrap()
+                    .unwrap()
+                    .join(".config/fedora-kernel-manager/branch")
+                    .exists()
+                {
+                    true => {
+                        let narrow_branch: Vec<KernelBranch> = data
+                            .clone()
+                            .into_iter()
+                            .filter(|a| {
+                                a.name
+                                    == fs::read_to_string(
+                                        get_my_home()
+                                            .unwrap()
+                                            .unwrap()
+                                            .join(".config/fedora-kernel-manager/branch"),
+                                    )
+                                    .unwrap()
+                            })
+                            .collect();
+                        *selected_kernel_branch_clone0.borrow_mut() =
+                            narrow_branch.get(0).unwrap().clone()
+                    }
+                    _ => {
+                        let normal_branch = data.clone().get(0).unwrap().clone();
+                        *selected_kernel_branch_clone0.borrow_mut() = normal_branch
+                    }
+                };
+            }
+        }),
+    );
 
     content_box
 }
 
-fn kernel_branch_expandable(expander_row: &adw::ExpanderRow, selected_kernel_branch: &Rc<RefCell<KernelBranch>>) -> gtk::ListBox {
+fn kernel_branch_expandable(
+    expander_row: &adw::ExpanderRow,
+    selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
+    get_kernel_branches_receiver: Receiver<Vec<KernelBranch>>,
+) -> gtk::ListBox {
     let searchbar = gtk::SearchEntry::builder().search_delay(500).build();
     searchbar.add_css_class("round-border-only-top");
 
@@ -155,7 +200,11 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow, selected_kernel_bra
         .label("No branch selected")
         .build();
 
-    for branch in get_kernel_branches() {
+    let get_kernel_branches_loop_context = MainContext::default();
+    // The main loop executes the asynchronous block
+    get_kernel_branches_loop_context.spawn_local(clone!(@weak expander_row, @weak branch_container, @strong selected_kernel_branch => async move {
+        while let Ok(data) = get_kernel_branches_receiver.recv().await {
+for branch in data {
         let branch_clone0 = branch.clone();
         let branch_clone1 = branch.clone();
         let branch_checkbutton = gtk::CheckButton::builder()
@@ -180,11 +229,28 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow, selected_kernel_bra
             }),
         );
 
-        match get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch").exists() {
-            true if fs::read_to_string(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).unwrap() == branch_clone1.name => branch_checkbutton.set_active(true),
-                _ => {}
+        match get_my_home()
+            .unwrap()
+            .unwrap()
+            .join(".config/fedora-kernel-manager/branch")
+            .exists()
+        {
+            true if fs::read_to_string(
+                get_my_home()
+                    .unwrap()
+                    .unwrap()
+                    .join(".config/fedora-kernel-manager/branch"),
+            )
+            .unwrap()
+                == branch_clone1.name =>
+            {
+                branch_checkbutton.set_active(true)
+            }
+            _ => {}
         }
     }
+        }
+    }));
 
     let branch_container_viewport = gtk::ScrolledWindow::builder()
         .child(&branch_container)
@@ -280,19 +346,27 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
     let data = fs::read_to_string(
         "/home/ward/RustroverProjects/fedora-kernel-manager/data/kernel_branches.json",
     )
-        .expect("Unable to read file");
+    .expect("Unable to read file");
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(branches) = &res["branches"] {
         for branch in branches {
-
-            println!("Downloading & Parsing package DB for {}.", branch.name);
+            println!(
+                "Downloading & Parsing package DB for {}.",
+                branch["name"].as_str().to_owned().unwrap().to_string()
+            );
             let branch = KernelBranch {
                 name: branch["name"].as_str().to_owned().unwrap().to_string(),
                 db_url: branch["db_url"].as_str().to_owned().unwrap().to_string(),
-                db: reqwest::blocking::get(branch["db_url"].as_str().to_owned().unwrap().to_string(),).unwrap().text().unwrap()
+                db: reqwest::blocking::get(
+                    branch["db_url"].as_str().to_owned().unwrap().to_string(),
+                )
+                .unwrap()
+                .text()
+                .unwrap(),
             };
             kernel_branches_array.push(branch)
-        }};
+        }
+    };
 
     kernel_branches_array
 }
@@ -418,7 +492,10 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
 }
 
 fn save_branch_config(branch: &str) {
-    let config_path = get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager");
+    let config_path = get_my_home()
+        .unwrap()
+        .unwrap()
+        .join(".config/fedora-kernel-manager");
     match &config_path.exists() {
         true => fs::write(config_path.join("branch"), branch).unwrap(),
         _ => {

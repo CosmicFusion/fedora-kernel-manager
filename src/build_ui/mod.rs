@@ -1,6 +1,7 @@
 use crate::{content, kernel_pkg, sched_ext, KernelBranch, PRETTY_NAME};
 use adw::prelude::*;
 use adw::*;
+use glib::property::PropertyGet;
 use glib::{clone, MainContext};
 use gtk::prelude::*;
 use gtk::*;
@@ -8,11 +9,14 @@ use std::cell::RefCell;
 use std::process::Command;
 use std::rc::Rc;
 use std::{thread, time};
-use glib::property::PropertyGet;
 
 pub fn build_ui(app: &adw::Application) {
     let internet_connected = Rc::new(RefCell::new(false));
-    let selected_kernel_branch: Rc<RefCell<KernelBranch>> = Rc::new(RefCell::new(KernelBranch{name: "?".to_owned(), db_url:"?".to_owned() , db:"?".to_owned()}));
+    let selected_kernel_branch: Rc<RefCell<KernelBranch>> = Rc::new(RefCell::new(KernelBranch {
+        name: "?".to_owned(),
+        db_url: "?".to_owned(),
+        db: "?".to_owned(),
+    }));
 
     let (internet_loop_sender, internet_loop_receiver) = async_channel::unbounded();
     let internet_loop_sender = internet_loop_sender.clone();
@@ -66,7 +70,8 @@ pub fn build_ui(app: &adw::Application) {
 
     content_stack.add_named(
         &content::content(&content_stack, &selected_kernel_branch2),
-        Some("content_page"));
+        Some("content_page"),
+    );
     content_stack.add_named(
         &sched_ext::sched_ext_page(&content_stack),
         Some("sched_ext_page"),
