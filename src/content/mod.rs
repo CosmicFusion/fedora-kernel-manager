@@ -116,28 +116,6 @@ pub fn content(content_stack: &gtk::Stack, selected_kernel_branch: &Rc<RefCell<K
     content_box.append(&kernel_branch_expander_row_boxedlist);
     content_box.append(&button_box);
 
-    let window_bottombar = gtk::Box::builder()
-        .hexpand(true)
-        .homogeneous(true)
-        .margin_bottom(15)
-        .margin_start(15)
-        .margin_end(15)
-        .margin_start(15)
-        .build();
-
-    let apply_button = gtk::Button::builder()
-        .halign(Align::End)
-        .label("Apply Changes")
-        .build();
-
-    apply_button.add_css_class("pill");
-    apply_button.add_css_class("destructive-action");
-
-    let cancel_button = gtk::Button::builder()
-        .halign(Align::Start)
-        .label("Cancel Changes")
-        .build();
-
 
     let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
     let selected_kernel_branch_clone1 = selected_kernel_branch.clone();
@@ -154,13 +132,6 @@ pub fn content(content_stack: &gtk::Stack, selected_kernel_branch: &Rc<RefCell<K
             *selected_kernel_branch_clone0.borrow_mut()=normal_branch
         }
     };
-
-    cancel_button.add_css_class("pill");
-
-    window_bottombar.append(&cancel_button);
-    window_bottombar.append(&apply_button);
-
-    content_box.append(&window_bottombar);
 
     content_box
 }
@@ -305,17 +276,22 @@ pub fn create_kernel_badge(
 }
 
 fn get_kernel_branches() -> Vec<KernelBranch> {
-    let test_branch = KernelBranch {
-      name: "kernel-cachy".to_string(),
-      db: "https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/db-kernel-cachy.json".to_string()
-    };
+    let mut kernel_branches_array: Vec<KernelBranch> = Vec::new();
+    let data = fs::read_to_string(
+        "/home/ward/RustroverProjects/fedora-kernel-manager/data/kernel_branches.json",
+    )
+        .expect("Unable to read file");
+    let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
+    if let serde_json::Value::Array(branches) = &res["branches"] {
+        for branch in branches {
+            let branch = KernelBranch{
+                name: branch["name"].as_str().to_owned().unwrap().to_string(),
+                db: branch["db"].as_str().to_owned().unwrap().to_string(),
+            };
+            kernel_branches_array.push(branch)
+        }};
 
-    let test_branch2 = KernelBranch {
-        name: "kernel-tkg".to_string(),
-        db: "https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/db-kernel-cachy.json".to_string()
-    };
-
-    vec![test_branch, test_branch2]
+    kernel_branches_array
 }
 pub fn get_running_kernel_info() -> RunningKernelInfo {
     let kernel = match Command::new("uname")
