@@ -2,8 +2,8 @@ mod build_ui;
 mod content;
 mod sched_ext;
 
-use gtk::*;
 use adw::prelude::*;
+use gtk::*;
 
 use crate::gdk::Display;
 
@@ -22,10 +22,7 @@ struct KernelBranch {
 }
 
 fn main() -> glib::ExitCode {
-
-    let app = adw::Application::builder()
-        .application_id(APP_ID)
-        .build();
+    let app = adw::Application::builder().application_id(APP_ID).build();
 
     app.connect_startup(|app| {
         load_gresource();
@@ -38,8 +35,7 @@ fn main() -> glib::ExitCode {
 }
 
 fn load_gresource() {
-    gio::resources_register_include!("data.gresource")
-        .expect("Failed to register resources.");
+    gio::resources_register_include!("data.gresource").expect("Failed to register resources.");
 }
 
 fn load_css() {

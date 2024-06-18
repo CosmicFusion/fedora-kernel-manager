@@ -1,8 +1,8 @@
-use gtk::*;
-use gtk::prelude::*;
-use adw::*;
+use crate::{content, sched_ext, PRETTY_NAME};
 use adw::prelude::*;
-use crate::{content, PRETTY_NAME, sched_ext};
+use adw::*;
+use gtk::prelude::*;
+use gtk::*;
 
 pub fn build_ui(app: &adw::Application) {
     let window = adw::ApplicationWindow::new(app);
@@ -24,12 +24,13 @@ pub fn build_ui(app: &adw::Application) {
         .transition_type(StackTransitionType::Crossfade)
         .build();
 
-    let window_toolbar = adw::ToolbarView::builder()
-        .content(&content_stack)
-        .build();
+    let window_toolbar = adw::ToolbarView::builder().content(&content_stack).build();
 
     content_stack.add_named(&content::content(&content_stack), Some("content_page"));
-    content_stack.add_named(&sched_ext::sched_ext_page(&content_stack), Some("sched_ext_page"));
+    content_stack.add_named(
+        &sched_ext::sched_ext_page(&content_stack),
+        Some("sched_ext_page"),
+    );
 
     window_toolbar.add_top_bar(&window_headerbar);
 
@@ -48,5 +49,7 @@ fn load_icon_theme(window: &adw::ApplicationWindow) {
     let icon_theme = gtk::IconTheme::for_display(&WidgetExt::display(window));
 
     icon_theme.add_resource_path("/com/github/cosmicfusion/fedora-kernel-manager/icons/");
-    icon_theme.add_resource_path("/com/github/cosmicfusion/fedora-kernel-manager/icons/scalable/actions/");
+    icon_theme.add_resource_path(
+        "/com/github/cosmicfusion/fedora-kernel-manager/icons/scalable/actions/",
+    );
 }

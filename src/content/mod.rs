@@ -1,18 +1,17 @@
-use glib::*;
-use adw::prelude::*;
-use gtk::*;
-use gtk::prelude::*;
-use std::process::{Command, Stdio};
 use crate::{KernelBranch, RunningKernelInfo};
-use Vec;
-use std::fs;
-use std::path::Path;
+use adw::prelude::*;
 use adw::ExpanderRow;
 use duct::cmd;
+use glib::*;
+use gtk::prelude::*;
+use gtk::*;
+use std::fs;
+use std::path::Path;
+use std::process::{Command, Stdio};
 use version_compare::Version;
+use Vec;
 
 pub fn content(content_stack: &gtk::Stack) -> gtk::Box {
-
     let running_kernel_info = get_running_kernel_info();
 
     let content_box = gtk::Box::builder()
@@ -142,9 +141,7 @@ pub fn content(content_stack: &gtk::Stack) -> gtk::Box {
 }
 
 fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
-    let searchbar = gtk::SearchEntry::builder()
-        .search_delay(500)
-        .build();
+    let searchbar = gtk::SearchEntry::builder().search_delay(500).build();
     searchbar.add_css_class("round-border-only-top");
 
     let boxedlist = gtk::ListBox::builder()
@@ -174,11 +171,13 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
         branch_row.add_prefix(&branch_checkbutton);
         branch_checkbutton.set_group(Some(&null_checkbutton));
         branch_container.append(&branch_row);
-        branch_checkbutton.connect_toggled(clone!(@weak branch_checkbutton, @weak expander_row => move |_| {
-            if branch_checkbutton.is_active() == true {
-                expander_row.set_title(&branch_row.title());
-            }
-        }));
+        branch_checkbutton.connect_toggled(
+            clone!(@weak branch_checkbutton, @weak expander_row => move |_| {
+                if branch_checkbutton.is_active() == true {
+                    expander_row.set_title(&branch_row.title());
+                }
+            }),
+        );
         //if current_keyboard.contains(&(keyboard_layout_clone)) {
         //    keyboard_layout_checkbutton.set_active(true);
         //}
@@ -217,9 +216,15 @@ fn kernel_branch_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
     boxedlist
 }
 
-pub fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str, group_size: &gtk::SizeGroup, group_size0: &gtk::SizeGroup, group_size1: &gtk::SizeGroup) -> gtk::ListBox {
-    let badge_box = gtk::Box::builder()
-        .build();
+pub fn create_kernel_badge(
+    label0_text: &str,
+    label1_text: &str,
+    css_style: &str,
+    group_size: &gtk::SizeGroup,
+    group_size0: &gtk::SizeGroup,
+    group_size1: &gtk::SizeGroup,
+) -> gtk::ListBox {
+    let badge_box = gtk::Box::builder().build();
 
     let label0 = gtk::Label::builder()
         .label(label0_text)
@@ -232,8 +237,7 @@ pub fn create_kernel_badge(label0_text: &str, label1_text: &str, css_style: &str
         .build();
     group_size0.add_widget(&label0);
 
-    let label_seprator = gtk::Separator::builder()
-        .build();
+    let label_seprator = gtk::Separator::builder().build();
 
     let label1 = gtk::Label::builder()
         .label(label1_text)
@@ -282,9 +286,13 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
     vec![test_branch, test_branch2]
 }
 pub fn get_running_kernel_info() -> RunningKernelInfo {
-    let kernel = match Command::new("uname").arg("-r").stdout(Stdio::piped()).output() {
-        Ok(t) =>  String::from_utf8(t.stdout).unwrap().trim().to_owned(),
-        Err(_) => "Unknown".to_string()
+    let kernel = match Command::new("uname")
+        .arg("-r")
+        .stdout(Stdio::piped())
+        .output()
+    {
+        Ok(t) => String::from_utf8(t.stdout).unwrap().trim().to_owned(),
+        Err(_) => "Unknown".to_string(),
     };
 
     let version = match linux_version::linux_kernel_version() {
@@ -295,14 +303,14 @@ pub fn get_running_kernel_info() -> RunningKernelInfo {
                 format!("{}.{}.{}", t.major, t.minor, t.patch)
             }
         }
-        Err(_) => "Unknown".to_string()
+        Err(_) => "Unknown".to_string(),
     };
 
     let info = RunningKernelInfo {
         kernel: kernel,
         version: version.clone(),
         // didn't find a way to accurately get this, outside of sched-ext (https://github.com/CachyOS/kernel-manager/blob/develop/src/schedext-window.cpp)
-        sched: get_current_scheduler(version)
+        sched: get_current_scheduler(version),
     };
 
     info
@@ -313,12 +321,12 @@ pub fn get_current_scheduler(version: String) -> String {
         println!("sched_ext is detected, getting scx scheduler");
         let scx_sched = match fs::read_to_string("/sys/kernel/sched_ext/root/ops") {
             Ok(t) => t,
-            Err(_) => "unknown!".to_string()
+            Err(_) => "unknown!".to_string(),
         };
         "sched_ext: ".to_owned() + &scx_sched
     } else if bore_check() {
         "BORE".to_string()
-    } else if Version::from(&version) >= Version::from("6.6")  {
+    } else if Version::from(&version) >= Version::from("6.6") {
         "EEVDF?".to_string()
     } else {
         "CFS?".to_string()
@@ -326,16 +334,16 @@ pub fn get_current_scheduler(version: String) -> String {
 }
 
 fn bore_check() -> bool {
-   let is_bore= match cmd!("sysctl", "-n", "kernel.sched_bore").read() {
-     Ok(t) => {
-         if t == "1" {
-             true
-         } else {
-             false
-         }
-     }
-       Err(_) => false
-   };
+    let is_bore = match cmd!("sysctl", "-n", "kernel.sched_bore").read() {
+        Ok(t) => {
+            if t == "1" {
+                true
+            } else {
+                false
+            }
+        }
+        Err(_) => false,
+    };
     is_bore
 }
 
@@ -348,8 +356,7 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
 
     let version_css_style = if &running_kernel_info.version.as_str() == &kernel_version {
         "background-green-bg"
-    }
-    else {
+    } else {
         "background-red-bg"
     };
 
@@ -357,9 +364,44 @@ fn create_kernel_badges(badge_box: &gtk::Box, running_kernel_info: &RunningKerne
         badge_box.remove(&widget);
     }
 
-    badge_box.append(&create_kernel_badge("Kernel Branch", "cachy", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
-    badge_box.append(&create_kernel_badge("Latest Version", "6.9", "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
-    badge_box.append(&create_kernel_badge("Running Version", &running_kernel_info.version, &version_css_style, &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
-    badge_box.append(&create_kernel_badge("Running Kernel", &running_kernel_info.kernel, &version_css_style, &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
-    badge_box.append(&create_kernel_badge("Running Sched", &running_kernel_info.sched, "background-accent-bg", &kernel_badges_size_group, &kernel_badges_size_group0, &kernel_badges_size_group1));
+    badge_box.append(&create_kernel_badge(
+        "Kernel Branch",
+        "cachy",
+        "background-accent-bg",
+        &kernel_badges_size_group,
+        &kernel_badges_size_group0,
+        &kernel_badges_size_group1,
+    ));
+    badge_box.append(&create_kernel_badge(
+        "Latest Version",
+        "6.9",
+        "background-accent-bg",
+        &kernel_badges_size_group,
+        &kernel_badges_size_group0,
+        &kernel_badges_size_group1,
+    ));
+    badge_box.append(&create_kernel_badge(
+        "Running Version",
+        &running_kernel_info.version,
+        &version_css_style,
+        &kernel_badges_size_group,
+        &kernel_badges_size_group0,
+        &kernel_badges_size_group1,
+    ));
+    badge_box.append(&create_kernel_badge(
+        "Running Kernel",
+        &running_kernel_info.kernel,
+        &version_css_style,
+        &kernel_badges_size_group,
+        &kernel_badges_size_group0,
+        &kernel_badges_size_group1,
+    ));
+    badge_box.append(&create_kernel_badge(
+        "Running Sched",
+        &running_kernel_info.sched,
+        "background-accent-bg",
+        &kernel_badges_size_group,
+        &kernel_badges_size_group0,
+        &kernel_badges_size_group1,
+    ));
 }
