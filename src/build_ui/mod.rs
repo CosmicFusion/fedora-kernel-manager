@@ -1,20 +1,55 @@
-use crate::{content, sched_ext, PRETTY_NAME};
+use crate::{content, kernel_pkg, sched_ext, KernelBranch, PRETTY_NAME};
 use adw::prelude::*;
 use adw::*;
+use async_channel::*;
+use glib::{clone, MainContext};
 use gtk::prelude::*;
 use gtk::*;
+use std::cell::RefCell;
+use std::process::Command;
+use std::rc::Rc;
+use std::{thread, time};
 
 pub fn build_ui(app: &adw::Application) {
-    let window = adw::ApplicationWindow::new(app);
+    let internet_connected = Rc::new(RefCell::new(false));
+    let selected_kernel_branch: Rc<RefCell<KernelBranch>>;
 
-    load_icon_theme(&window);
+    let (internet_loop_sender, internet_loop_receiver) = async_channel::unbounded();
+    let internet_loop_sender = internet_loop_sender.clone();
 
-    window.connect_close_request(move |window| {
-        if let Some(application) = window.application() {
-            application.remove_window(window);
-        }
-        glib::Propagation::Proceed
+    std::thread::spawn(move || loop {
+        match Command::new("ping").arg("google.com").arg("-c 1").output() {
+            Ok(t) if t.status.success() => internet_loop_sender
+                .send_blocking(true)
+                .expect("The channel needs to be open"),
+            _ => internet_loop_sender
+                .send_blocking(false)
+                .expect("The channel needs to be open"),
+        };
+        thread::sleep(time::Duration::from_secs(5));
     });
+
+    let window_banner = adw::Banner::builder().revealed(false).build();
+
+    let internet_connected_status = internet_connected.clone();
+
+    let internet_loop_context = MainContext::default();
+    // The main loop executes the asynchronous block
+    internet_loop_context.spawn_local(clone!(@weak window_banner => async move {
+        while let Ok(state) = internet_loop_receiver.recv().await {
+            let banner_text = "Warning: No internet connection";
+            if state == true {
+                *internet_connected_status.borrow_mut()=true;
+                if window_banner.title() == banner_text {
+                    window_banner.set_revealed(false)
+                }
+            } else {
+                *internet_connected_status.borrow_mut()=false;
+                window_banner.set_title(banner_text);
+                window_banner.set_revealed(true)
+            }
+        }
+    }));
 
     let window_headerbar = adw::HeaderBar::builder()
         .title_widget(&adw::WindowTitle::builder().title(PRETTY_NAME).build())
@@ -31,8 +66,13 @@ pub fn build_ui(app: &adw::Application) {
         &sched_ext::sched_ext_page(&content_stack),
         Some("sched_ext_page"),
     );
+    content_stack.add_named(
+        &kernel_pkg::kernel_pkg_page(&content_stack),
+        Some("kernel_pkg_page"),
+    );
 
     window_toolbar.add_top_bar(&window_headerbar);
+    window_toolbar.add_top_bar(&window_banner);
 
     let window = adw::ApplicationWindow::builder()
         .application(app)
@@ -41,6 +81,15 @@ pub fn build_ui(app: &adw::Application) {
         .height_request(600)
         .resizable(false)
         .build();
+
+    load_icon_theme(&window);
+
+    window.connect_close_request(move |window| {
+        if let Some(application) = window.application() {
+            application.remove_window(window);
+        }
+        glib::Propagation::Proceed
+    });
 
     window.present();
 }

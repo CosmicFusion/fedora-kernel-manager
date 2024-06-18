@@ -1,5 +1,6 @@
 mod build_ui;
 mod content;
+mod kernel_pkg;
 mod sched_ext;
 
 use adw::prelude::*;

@@ -79,6 +79,10 @@ pub fn content(content_stack: &gtk::Stack) -> gtk::Box {
         .build();
     browse_kernels_button.add_css_class("circular");
 
+    browse_kernels_button.connect_clicked(clone!(@weak content_stack => move |_| {
+        content_stack.set_visible_child_name("kernel_pkg_page")
+    }));
+
     let config_kernel_button = gtk::Button::builder()
         .icon_name("settings")
         .halign(Align::End)
