@@ -79,6 +79,8 @@ pub fn sched_ext_page(content_stack: &gtk::Stack) -> gtk::Box {
 
     let window_bottombar = gtk::Box::builder()
         .hexpand(true)
+        .vexpand(true)
+        .valign(Align::End)
         .homogeneous(true)
         .margin_bottom(15)
         .margin_start(15)

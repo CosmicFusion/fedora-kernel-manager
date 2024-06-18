@@ -2,6 +2,14 @@
     color: @accent_bg_color;
 }
 
+.size-20-font {
+    font-size: 20px;
+}
+
+.rounded-all-25 {
+    border-radius: 25px;
+}
+
 .background-accent-bg {
     background: @accent_bg_color;
     border-radius: 10px;

@@ -128,9 +128,9 @@ pub fn content(
         .build();
     browse_kernels_button.add_css_class("circular");
 
-    browse_kernels_button.connect_clicked(clone!(@weak content_stack => move |_| {
+    browse_kernels_button.connect_clicked(clone!(@weak content_stack, @strong selected_kernel_branch => move |_| {
             content_stack.add_named(
-        &kernel_pkg::kernel_pkg_page(&content_stack),
+        &kernel_pkg::kernel_pkg_page(&content_stack, &selected_kernel_branch),
         Some("kernel_pkg_page"),
     );
         content_stack.set_visible_child_name("kernel_pkg_page")
