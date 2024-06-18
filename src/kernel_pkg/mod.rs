@@ -184,10 +184,10 @@ fn add_package_rows(
                 .build();
             let kernel_action_box = gtk::Box::builder().homogeneous(true).build();
             kernel_remove_button.add_css_class("destructive-action");
-            kernel_expander_row.add_prefix(&kernel_package_label);
             kernel_expander_row.add_suffix(&kernel_status_icon);
+            kernel_expander_row.add_suffix(&kernel_package_label);
             kernel_expander_row.set_title(&kernel_name);
-            //kernel_expander_row.set_subtitle(&kernel.clone().version);
+            //kernel_expander_row.set_subtitle(&kernel_package_version);
             //
             kernel_content_row.add_prefix(&kernel_description_label);
             kernel_action_box.append(&kernel_remove_button);
