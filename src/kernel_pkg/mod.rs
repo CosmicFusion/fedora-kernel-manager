@@ -154,10 +154,11 @@ fn add_package_rows(
                 .to_owned()
                 .unwrap()
                 .to_string();
-            let kernel_min_x86_march = kernel["min_x86_march"]
-                .as_u64()
-                .to_owned()
-                .unwrap();
+            //let kernel_min_x86_march = kernel["min_x86_march"]
+            //    .as_str()
+            //    .to_owned()
+            //    .unwrap()
+            //    .to_string();
             let kernel_package_version = match Command::new("/usr/lib/fedora-kernel-manager/scripts/get_version.sh")
                 .args([&kernel_package])
                 .output() {
@@ -441,7 +442,7 @@ fn get_cpu_feature_level() -> String {
         .spawn()                      // Once configured, we actually spawn the command...
         .unwrap();                    // and assert everything went right.
     let grep_command = Command::new("grep")
-        .arg("(supported, searched2)")
+        .arg("(supported, searched)")
         .stdin(Stdio::from(base_command.stdout.unwrap()))
         .stdout(Stdio::piped())
         .spawn()
