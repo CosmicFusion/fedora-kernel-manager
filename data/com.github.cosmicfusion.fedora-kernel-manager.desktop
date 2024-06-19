@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Fedora Kernel Manager
+Exec=fedora-kernel-manager
+Icon=com.github.cosmicfusion.fedora-kernel-manager
+Terminal=false
+Type=Application
+Encoding=UTF-8
+Categories=Application;System;Settings;XFCE;X-XFCE-SettingsDialog;X-XFCE-SystemSettings;
+StartupNotify=true
