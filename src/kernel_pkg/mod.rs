@@ -154,11 +154,10 @@ fn add_package_rows(
                 .to_owned()
                 .unwrap()
                 .to_string();
-            //let kernel_min_x86_march = kernel["min_x86_march"]
-            //    .as_str()
-            //    .to_owned()
-            //    .unwrap()
-            //    .to_string();
+            let kernel_min_x86_march = kernel["min_x86_march"]
+                .as_u64()
+                .to_owned()
+                .unwrap()
             let kernel_package_version = match Command::new("/usr/lib/fedora-kernel-manager/scripts/get_version.sh")
                 .args([&kernel_package])
                 .output() {
@@ -384,7 +383,6 @@ fn add_package_rows(
             }));
             //
             //if kernel_needs_v3 = false || kernel_needs_v3 = true && cpu_feature_level = "x86-64-v3"
-            println!("{}", cpu_feature_level);
             boxedlist.append(&kernel_expander_row);
         }
     };

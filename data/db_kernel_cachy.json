@@ -5,13 +5,13 @@
       "name": "CachyOS Default Kernel",
       "package": "kernel-cachyos",
       "description": "CachyOS Kernel with default scheduler.",
-      "min_x86_march": 3
+      "min_x86_march": "3"
     },
     {
       "name": "CachyOS LTS Kernel",
       "package": "kernel-cachyos-lts",
       "description": "CachyOS Long Term Support Kernel.",
-      "min_x86_march": 2
+      "min_x86_march": "2"
     }
   ]
 }
