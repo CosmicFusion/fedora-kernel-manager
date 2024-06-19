@@ -1,12 +1,14 @@
 use crate::content::get_running_kernel_info;
-use crate::RunningKernelInfo;
+use crate::{KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
 use glib::*;
 use gtk::prelude::*;
 use gtk::*;
 use std::{fs, io};
+use std::cell::RefCell;
 use std::fs::*;
 use std::process::Stdio;
+use std::rc::Rc;
 use duct::cmd;
 use gtk::AccessibleRole::Command;
 
@@ -51,24 +53,32 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
         .orientation(Orientation::Vertical)
         .build();
 
+    let initial_running_kernel_info = get_running_kernel_info();
+
     create_current_sched_badge(
         &badge_box,
-        &get_running_kernel_info(),
+        &initial_running_kernel_info,
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,
+    );
+
+    let selected_scx_sched = Rc::new(RefCell::new(initial_running_kernel_info.sched));
+
+    let cmd_status_dialog = adw::MessageDialog::builder()
+        .transient_for(window)
+        .hide_on_close(true)
+        .build();
+    cmd_status_dialog.add_response(
+        "cmd_status_dialog_ok",
+        "Ok",
     );
 
     let scx_sched_expander_row = adw::ExpanderRow::builder()
         .subtitle("Select Sched-EXT Scheduler")
         .build();
 
-    scx_sched_expander_row.add_row(&scx_sched_expandable(&scx_sched_expander_row,
-                                                         &window,
-                                                         &badge_box,
-                                                         &kernel_badges_size_group,
-                                                         &kernel_badges_size_group0,
-                                                         &kernel_badges_size_group1,));
+    scx_sched_expander_row.add_row(&scx_sched_expandable(&scx_sched_expander_row, &selected_scx_sched));
 
     let scx_sched_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
@@ -115,6 +125,28 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
     apply_button.add_css_class("pill");
     apply_button.add_css_class("destructive-action");
 
+    apply_button.connect_clicked(clone! (@weak badge_box, @weak kernel_badges_size_group, @weak kernel_badges_size_group0, @weak kernel_badges_size_group1 => move |_| {
+        let selected_scx_sched_clone1 = selected_scx_sched.borrow().clone();
+
+        match change_scx_scheduler(&selected_scx_sched_clone1,
+                                   &badge_box,
+                                   &kernel_badges_size_group,
+                                   &kernel_badges_size_group0,
+                                   &kernel_badges_size_group1,) {
+            Ok(_) => {
+                cmd_status_dialog.set_heading(Some("Success!"));
+                cmd_status_dialog.set_body(format!("SCX has been set to: {}", &selected_scx_sched_clone1).as_str());
+                cmd_status_dialog.present()
+
+            }
+            Err(_) => {
+                cmd_status_dialog.set_heading(Some("Failed!"));
+                cmd_status_dialog.set_body(format!("SCX couldn't be has been set to: {}", &selected_scx_sched_clone1).as_str());
+                cmd_status_dialog.present()
+            }
+        };
+    }));
+
     let cancel_button = gtk::Button::builder()
         .halign(Align::End)
         .label("Cancel Changes")
@@ -156,12 +188,7 @@ fn create_current_sched_badge(
 }
 
 fn scx_sched_expandable(expander_row: &adw::ExpanderRow,
-                        window: &adw::ApplicationWindow,
-                        badge_box: &gtk::Box,
-                        kernel_badges_size_group: &gtk::SizeGroup,
-                        kernel_badges_size_group0: &gtk::SizeGroup,
-                        kernel_badges_size_group1: &gtk::SizeGroup,
-) -> gtk::ListBox {
+                        selected_scx_sched: &Rc<RefCell<String>>) -> gtk::ListBox {
     let searchbar = gtk::SearchEntry::builder().search_delay(500).build();
     searchbar.add_css_class("round-border-only-top");
 
@@ -183,7 +210,7 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow,
     let data = fs::read_to_string(
         "/home/ward/RustroverProjects/fedora-kernel-manager/data/scx_scheds.json",
     )
-    .expect("Unable to read file");
+        .expect("Unable to read file");
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(scheds) = &res["scx_schedulers"] {
         for sched in scheds {
@@ -200,33 +227,11 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow,
             branch_row.add_prefix(&sched_checkbutton);
             sched_checkbutton.set_group(Some(&null_checkbutton));
             sched_container.append(&branch_row);
-            let cmd_status_dialog = adw::MessageDialog::builder()
-                .transient_for(window)
-                .hide_on_close(true)
-                .build();
-            cmd_status_dialog.add_response(
-                "cmd_status_dialog_ok",
-                "Ok",
-            );
             sched_checkbutton.connect_toggled(
-                clone!(@weak sched_checkbutton, @weak expander_row, @weak badge_box, @strong get_running_kernel_info, @weak kernel_badges_size_group, @weak kernel_badges_size_group0, @weak kernel_badges_size_group1 => move |_| {
+                clone!(@weak sched_checkbutton, @weak expander_row, @strong selected_scx_sched => move |_| {
                     if sched_checkbutton.is_active() == true {
                         expander_row.set_title(&branch_row.title());
-                        match change_scx_scheduler(&sched,         &badge_box,
-        &kernel_badges_size_group,
-        &kernel_badges_size_group0,
-        &kernel_badges_size_group1,) {
-                            Ok(_) => {
-                                cmd_status_dialog.set_heading(Some("Success!"));
-                                cmd_status_dialog.set_body(format!("SCX has been set to: {}", &sched).as_str());
-                                cmd_status_dialog.present()
-                            }
-                            Err(_) => {
-                                cmd_status_dialog.set_heading(Some("Failed!"));
-                                cmd_status_dialog.set_body(format!("SCX couldn't be has been set to: {}", &sched).as_str());
-                                cmd_status_dialog.present()
-                            }
-                        };
+                        *selected_scx_sched.borrow_mut() = sched.to_string();;
                     }
                 }),
             );
