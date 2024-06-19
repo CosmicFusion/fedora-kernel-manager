@@ -1,3 +1,4 @@
+use std::process::Stdio;
 use crate::content::get_running_kernel_info;
 use crate::{kernel_package_row, KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
@@ -41,6 +42,23 @@ pub fn kernel_pkg_page(
         .build();
     main_label.add_css_class("symbolic-accent-bg");
     main_label.add_css_class("size-20-font");
+
+    let main_icon = gtk::Image::builder()
+        .pixel_size(48)
+        .halign(Align::Start)
+        .margin_start(20)
+        .margin_end(20)
+        .margin_bottom(20)
+        .margin_top(20)
+        .build();
+
+    main_icon.set_icon_name(Some("tux-settings-symbolic"));
+
+    main_icon.add_css_class("symbolic-accent-bg");
+
+    let main_label_box = gtk::Box::new(Orientation::Horizontal, 0);
+    main_label_box.append(&main_icon);
+    main_label_box.append(&main_label);
 
     let searchbar = gtk::SearchEntry::builder()
         .search_delay(500)
@@ -105,7 +123,7 @@ pub fn kernel_pkg_page(
 
     window_bottombar.append(&back_button);
 
-    main_box.append(&main_label);
+    main_box.append(&main_label_box);
     main_box.append(&searchbar);
     main_box.append(&packages_viewport);
     main_box.append(&window_bottombar);
@@ -120,6 +138,12 @@ fn add_package_rows(
     rows_size_group: &gtk::SizeGroup,
     searchbar: &gtk::SearchEntry
 ) {
+    let cpu_feature_level: u64 = match get_cpu_feature_level().as_str() {
+        "x86-64-v4" => 4,
+        "x86-64-v3" => 3,
+        "x86-64-v2" => 2,
+        _ => 1
+    };
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(kernels) = &res["kernels"] {
         for kernel in kernels {
@@ -130,6 +154,10 @@ fn add_package_rows(
                 .to_owned()
                 .unwrap()
                 .to_string();
+            let kernel_min_x86_march = kernel["min_x86_march"]
+                .as_u64()
+                .to_owned()
+                .unwrap();
             let kernel_package_version = match Command::new("/usr/lib/fedora-kernel-manager/scripts/get_version.sh")
                 .args([&kernel_package])
                 .output() {
@@ -354,6 +382,8 @@ fn add_package_rows(
                 });
             }));
             //
+            //if kernel_needs_v3 = false || kernel_needs_v3 = true && cpu_feature_level = "x86-64-v3"
+            println!("{}", cpu_feature_level);
             boxedlist.append(&kernel_expander_row);
         }
     };
@@ -402,4 +432,24 @@ fn kernel_modify(
     child.wait()?;
 
     Ok(())
+}
+
+fn get_cpu_feature_level() -> String {
+    let base_command = Command::new("/lib64/ld-linux-x86-64.so.2") // `ps` command...
+        .arg("--help")                  // with argument `axww`...
+        .stdout(Stdio::piped())       // of which we will pipe the output.
+        .spawn()                      // Once configured, we actually spawn the command...
+        .unwrap();                    // and assert everything went right.
+    let grep_command = Command::new("grep")
+        .arg("(supported, searched2)")
+        .stdin(Stdio::from(base_command.stdout.unwrap()))
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let output = grep_command.wait_with_output().expect("Output failed");
+    let result = match String::from_utf8(output.stdout).expect("stringing failed").lines().next() {
+        Some(t) => t.trim_end_matches("(supported, searched)").trim().to_string(),
+        _ => "x86_64-v1".to_string()
+    };
+    result
 }

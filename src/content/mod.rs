@@ -117,7 +117,7 @@ pub fn content(
         .build();
 
     let browse_kernels_button = gtk::Button::builder()
-        .icon_name("web")
+        .icon_name("tux-settings-symbolic")
         .halign(Align::Start)
         .margin_start(10)
         .margin_end(10)
@@ -139,7 +139,7 @@ pub fn content(
     );
 
     let config_kernel_button = gtk::Button::builder()
-        .icon_name("settings")
+        .icon_name("tux-download-symbolic")
         .halign(Align::End)
         .margin_start(10)
         .margin_end(10)
@@ -413,7 +413,7 @@ pub fn get_current_scheduler(version: String) -> String {
         println!("sched_ext is detected, getting scx scheduler");
         let scx_sched = match fs::read_to_string("/sys/kernel/sched_ext/root/ops") {
             Ok(t) => t,
-            Err(_) => "unknown!".to_string(),
+            Err(_) => "disabled".to_string(),
         };
         "sched_ext: ".to_owned() + &scx_sched
     } else if bore_check() {

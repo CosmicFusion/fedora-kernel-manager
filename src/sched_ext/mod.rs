@@ -28,7 +28,7 @@ pub fn sched_ext_page(content_stack: &gtk::Stack) -> gtk::Box {
         .margin_top(20)
         .build();
 
-    main_icon.set_icon_name(Some("tux-symbolic"));
+    main_icon.set_icon_name(Some("tux-settings-symbolic"));
 
     main_icon.add_css_class("symbolic-accent-bg");
 
@@ -174,6 +174,7 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
     if let serde_json::Value::Array(scheds) = &res["scx_schedulers"] {
         for sched in scheds {
             let sched = sched["name"].as_str().to_owned().unwrap().to_string();
+            let sched_clone0 = sched.clone();
             let sched_checkbutton = gtk::CheckButton::builder()
                 .valign(Align::Center)
                 .can_focus(false)
@@ -192,9 +193,9 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
                     }
                 }),
             );
-            //if current_keyboard.contains(&(keyboard_layout_clone)) {
-            //    keyboard_layout_checkbutton.set_active(true);
-            //}
+            if format!("scx_{}",get_current_scx_scheduler()).as_str() == sched_clone0 {
+                sched_checkbutton.set_active(true)
+            }
         }
     };
 
@@ -230,4 +231,13 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
     }));
 
     boxedlist
+}
+
+fn get_current_scx_scheduler() -> String {
+    let scx_sched = match fs::read_to_string("/sys/kernel/sched_ext/root/ops") {
+        Ok(t) => t,
+        Err(_) => "disabled".to_string(),
+    };
+
+    scx_sched
 }

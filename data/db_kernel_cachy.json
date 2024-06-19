@@ -4,37 +4,14 @@
     {
       "name": "CachyOS Default Kernel",
       "package": "kernel-cachyos",
-      "description": "CachyOS Kernel with default scheduler."
-    },
-    {
-      "name": "CachyOS BORE Kernel",
-      "package": "kernel-cachyos-bore",
-      "description": "CachyOS Kernel with Burst-Oriented Response Enhancer\n    Scheduler by firelzrd (BORE)."
-    },
-    {
-      "name": "CachyOS BORE + EEVDF Kernel",
-      "package": "kernel-cachyos-bore-eevdf",
-      "description": "CachyOS Kernel with Burst-Oriented Response Enhancer\n    Scheduler by firelzrd (BORE) + Earliest Eligible Virtual Deadline (EEVDF)."
-    },
-    {
-      "name": "CachyOS BORE + EEVDF Kernel (RT)",
-      "package": "kernel-cachyos-bore-eevdf-rt",
-      "description": "CachyOS Kernel with Burst-Oriented Response Enhancer\n    Scheduler by firelzrd (BORE) + Earliest Eligible Virtual Deadline (EEVDF) with Real-Time compilation."
-    },
-    {
-      "name": "CachyOS BORE Kernel (LTO)",
-      "package": "kernel-cachyos-bore-lto",
-      "description": "CachyOS Kernel with Burst-Oriented Response Enhancer\n    Scheduler by firelzrd (BORE) with Link-Time-Optimizations (LTO)."
+      "description": "CachyOS Kernel with default scheduler.",
+      "min_x86_march": 3,
     },
     {
       "name": "CachyOS LTS Kernel",
       "package": "kernel-cachyos-lts",
-      "description": "CachyOS Long Term Support Kernel."
-    },
-    {
-      "name": "CachyOS Kernel (RT)",
-      "package": "kernel-cachyos-rt",
-      "description": "CachyOS Kernel with default scheduler and Real-Time compilation."
+      "description": "CachyOS Long Term Support Kernel.",
+      "min_x86_march": 2
     }
   ]
 }
