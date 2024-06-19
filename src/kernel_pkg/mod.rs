@@ -1,4 +1,3 @@
-use std::process::Stdio;
 use crate::content::get_running_kernel_info;
 use crate::{kernel_package_row, KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
@@ -13,6 +12,7 @@ use std::fs::*;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::process::Command;
+use std::process::Stdio;
 use std::rc::Rc;
 use std::time::*;
 
@@ -83,7 +83,7 @@ pub fn kernel_pkg_page(
         &selected_kernel_branch_clone0.db,
         &window,
         &rows_size_group,
-        &searchbar
+        &searchbar,
     );
 
     let packages_viewport = gtk::ScrolledWindow::builder()
@@ -136,13 +136,13 @@ fn add_package_rows(
     data: &str,
     window: &adw::ApplicationWindow,
     rows_size_group: &gtk::SizeGroup,
-    searchbar: &gtk::SearchEntry
+    searchbar: &gtk::SearchEntry,
 ) {
-    let cpu_feature_level: u64 = match get_cpu_feature_level().as_str() {
+    let cpu_feature_level: u32 = match get_cpu_feature_level().as_str() {
         "x86-64-v4" => 4,
         "x86-64-v3" => 3,
         "x86-64-v2" => 2,
-        _ => 1
+        _ => 1,
     };
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(kernels) = &res["kernels"] {
@@ -155,15 +155,19 @@ fn add_package_rows(
                 .unwrap()
                 .to_string();
             let kernel_min_x86_march = kernel["min_x86_march"]
-                .as_u64()
+                .as_str()
                 .to_owned()
                 .unwrap()
-            let kernel_package_version = match Command::new("/usr/lib/fedora-kernel-manager/scripts/get_version.sh")
-                .args([&kernel_package])
-                .output() {
-                Ok(t) => String::from_utf8(t.stdout).unwrap(),
-                _ => "Error".to_owned()
-            };
+                .parse::<u32>()
+                .unwrap();
+            let kernel_package_version =
+                match Command::new("/usr/lib/fedora-kernel-manager/scripts/get_version.sh")
+                    .args([&kernel_package])
+                    .output()
+                {
+                    Ok(t) => String::from_utf8(t.stdout).unwrap(),
+                    _ => "Error".to_owned(),
+                };
 
             let (log_loop_sender, log_loop_receiver) = async_channel::unbounded();
             let log_loop_sender: async_channel::Sender<String> = log_loop_sender.clone();
@@ -185,9 +189,13 @@ fn add_package_rows(
                     .output()
                     .unwrap();
                 if command_installed_status.status.success() {
-                    kernel_status_loop_sender.send_blocking(true).expect("channel needs to be open")
+                    kernel_status_loop_sender
+                        .send_blocking(true)
+                        .expect("channel needs to be open")
                 } else {
-                    kernel_status_loop_sender.send_blocking(false).expect("channel needs to be open")
+                    kernel_status_loop_sender
+                        .send_blocking(false)
+                        .expect("channel needs to be open")
                 }
                 std::thread::sleep(Duration::from_secs(6));
             });
@@ -381,9 +389,9 @@ fn add_package_rows(
                         }
                 });
             }));
-            //
-            //if kernel_needs_v3 = false || kernel_needs_v3 = true && cpu_feature_level = "x86-64-v3"
-            boxedlist.append(&kernel_expander_row);
+            if cpu_feature_level >= kernel_min_x86_march {
+                boxedlist.append(&kernel_expander_row);
+            }
         }
     };
 
@@ -435,10 +443,10 @@ fn kernel_modify(
 
 fn get_cpu_feature_level() -> String {
     let base_command = Command::new("/lib64/ld-linux-x86-64.so.2") // `ps` command...
-        .arg("--help")                  // with argument `axww`...
-        .stdout(Stdio::piped())       // of which we will pipe the output.
-        .spawn()                      // Once configured, we actually spawn the command...
-        .unwrap();                    // and assert everything went right.
+        .arg("--help") // with argument `axww`...
+        .stdout(Stdio::piped()) // of which we will pipe the output.
+        .spawn() // Once configured, we actually spawn the command...
+        .unwrap(); // and assert everything went right.
     let grep_command = Command::new("grep")
         .arg("(supported, searched)")
         .stdin(Stdio::from(base_command.stdout.unwrap()))
@@ -446,9 +454,16 @@ fn get_cpu_feature_level() -> String {
         .spawn()
         .unwrap();
     let output = grep_command.wait_with_output().expect("Output failed");
-    let result = match String::from_utf8(output.stdout).expect("stringing failed").lines().next() {
-        Some(t) => t.trim_end_matches("(supported, searched)").trim().to_string(),
-        _ => "x86_64-v1".to_string()
+    let result = match String::from_utf8(output.stdout)
+        .expect("stringing failed")
+        .lines()
+        .next()
+    {
+        Some(t) => t
+            .trim_end_matches("(supported, searched)")
+            .trim()
+            .to_string(),
+        _ => "x86_64-v1".to_string(),
     };
     result
 }

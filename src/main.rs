@@ -1,8 +1,8 @@
 mod build_ui;
 mod content;
+mod kernel_package_row;
 mod kernel_pkg;
 mod sched_ext;
-mod kernel_package_row;
 
 use adw::prelude::*;
 use gtk::*;

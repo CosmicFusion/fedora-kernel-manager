@@ -1,11 +1,9 @@
 use std::{cell::RefCell, env, rc::Rc, sync::OnceLock};
 
+use adw::*;
 use adw::{prelude::*, subclass::prelude::*, *};
 use glib::{clone, subclass::Signal, Properties};
 use gtk::{glib, Orientation::Horizontal};
-use adw::*;
-
-
 
 // ANCHOR: custom_button
 // Object holding the state
@@ -40,8 +38,7 @@ impl ObjectImpl for KernelPackageRow {
         // `SYNC_CREATE` ensures that the label will be immediately set
         let obj = self.obj();
 
-        let basic_expander_row_package_label = gtk::Label::builder()
-            .build();
+        let basic_expander_row_package_label = gtk::Label::builder().build();
 
         obj.add_suffix(&basic_expander_row_package_label);
 

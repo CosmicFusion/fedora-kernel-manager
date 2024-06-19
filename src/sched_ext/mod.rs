@@ -193,7 +193,7 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
                     }
                 }),
             );
-            if format!("scx_{}",get_current_scx_scheduler()).as_str() == sched_clone0 {
+            if format!("scx_{}", get_current_scx_scheduler()).as_str() == sched_clone0 {
                 sched_checkbutton.set_active(true)
             }
         }
