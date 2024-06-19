@@ -166,7 +166,6 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
         .label("No branch selected")
         .build();
 
-    let mut scx_sched_array: Vec<String> = Vec::new();
     let data = fs::read_to_string(
         "/home/ward/RustroverProjects/fedora-kernel-manager/data/scx_scheds.json",
     )

@@ -1,5 +1,5 @@
 use crate::content::get_running_kernel_info;
-use crate::{KernelBranch, RunningKernelInfo};
+use crate::{kernel_package_row, KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
 use duct::cmd;
 use glib::*;
@@ -53,6 +53,10 @@ pub fn kernel_pkg_page(
 
     let packages_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
+        .margin_bottom(15)
+        .margin_start(15)
+        .margin_end(15)
+        .margin_start(15)
         .build();
     packages_boxedlist.add_css_class("boxed-list");
     let rows_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
@@ -61,6 +65,7 @@ pub fn kernel_pkg_page(
         &selected_kernel_branch_clone0.db,
         &window,
         &rows_size_group,
+        &searchbar
     );
 
     let packages_viewport = gtk::ScrolledWindow::builder()
@@ -113,6 +118,7 @@ fn add_package_rows(
     data: &str,
     window: &adw::ApplicationWindow,
     rows_size_group: &gtk::SizeGroup,
+    searchbar: &gtk::SearchEntry
 ) {
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(kernels) = &res["kernels"] {
@@ -137,24 +143,25 @@ fn add_package_rows(
             let kernel_status_loop_sender: async_channel::Sender<bool> =
                 kernel_status_loop_sender.clone();
 
+            let kernel_package_clone0 = kernel_package.clone();
+
             std::thread::spawn(move || loop {
-                // let command_installed_status = std::Command::new("dpkg")
-                //     .args(["-s", &kernel_package_ind2])
-                //    .output()
-                //    .unwrap();
-                //if command_installed_status.status.success() {
-                //    kernel_status_loop_sender.send_blocking(true).expect("channel needs to be open")
-                //} else {
-                //    kernel_status_loop_sender.send_blocking(false).expect("channel needs to be open")
-                //}
+                let command_installed_status = Command::new("rpm")
+                    .args(["-q", &kernel_package_clone0])
+                    .output()
+                    .unwrap();
+                if command_installed_status.status.success() {
+                    kernel_status_loop_sender.send_blocking(true).expect("channel needs to be open")
+                } else {
+                    kernel_status_loop_sender.send_blocking(false).expect("channel needs to be open")
+                }
                 std::thread::sleep(Duration::from_secs(6));
-                kernel_status_loop_sender
-                    .send_blocking(true)
-                    .expect("channel needs to be open")
             });
 
-            let kernel_expander_row = adw::ExpanderRow::new();
-            let kernel_package_label = gtk::Label::builder().label(&kernel_package).build();
+            let kernel_package_clone0 = kernel_package.clone();
+
+            let kernel_expander_row = kernel_package_row::KernelPackageRow::new();
+            kernel_expander_row.set_package(kernel_package_clone0);
             let kernel_status_icon = gtk::Image::builder()
                 .icon_name("emblem-default")
                 .pixel_size(24)
@@ -185,7 +192,6 @@ fn add_package_rows(
             let kernel_action_box = gtk::Box::builder().homogeneous(true).build();
             kernel_remove_button.add_css_class("destructive-action");
             kernel_expander_row.add_suffix(&kernel_status_icon);
-            kernel_expander_row.add_suffix(&kernel_package_label);
             kernel_expander_row.set_title(&kernel_name);
             //kernel_expander_row.set_subtitle(&kernel_package_version);
             //
@@ -346,19 +352,51 @@ fn add_package_rows(
             boxedlist.append(&kernel_expander_row);
         }
     };
+
+    searchbar.connect_search_changed(clone!(@weak searchbar, @weak boxedlist => move |_| {
+        let mut counter = boxedlist.first_child();
+        while let Some(row) = counter {
+            if row.widget_name() == "KernelPackageRow" {
+                if !searchbar.text().is_empty() {
+                    if row.property::<String>("title").to_lowercase().contains(&searchbar.text().to_string().to_lowercase()) || row.property::<String>("package").to_lowercase().contains(&searchbar.text().to_string().to_lowercase()) {
+                        //row.grab_focus();
+                        //row.add_css_class("highlight-widget");
+                        row.set_property("visible", true);
+                        searchbar.grab_focus();
+                    } else {
+                        row.set_property("visible", false);
+                    }
+                } else {
+                    row.set_property("visible", true);
+                }
+            }
+            counter = row.next_sibling();
+        }
+        }));
 }
 
 const KERNEL_MODIFY_PROG: &str = r###"
 #! /bin/bash
-DRIVER="$0"
-/usr/lib/pika/drivers/modify-driver.sh "${DRIVER}"
+
+set -e
+
+PACKAGE="$0"
+
+if rpm -q "${PACKAGE}"
+then
+     dnf remove -y "${PACKAGE}"
+else
+     dnf install -y "${PACKAGE}"
+fi
+
+exit 0
 "###;
 fn kernel_modify(
     log_loop_sender: async_channel::Sender<String>,
     kernel_pkg: &str,
 ) -> Result<(), std::boxed::Box<dyn Error + Send + Sync>> {
     let (pipe_reader, pipe_writer) = os_pipe::pipe()?;
-    let child = cmd!("bash", "-c", KERNEL_MODIFY_PROG, kernel_pkg)
+    let child = cmd!("pkexec", "bash", "-c", KERNEL_MODIFY_PROG, kernel_pkg)
         .stderr_to_stdout()
         .stdout_file(pipe_writer)
         .start()?;

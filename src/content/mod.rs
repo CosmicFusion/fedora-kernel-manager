@@ -450,7 +450,6 @@ fn create_kernel_badges(
     let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
     let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
 
-    dbg!(&selected_kernel_branch_clone.db);
     let json: serde_json::Value =
         serde_json::from_str(&selected_kernel_branch_clone.db).expect("Unable to parse");
 
