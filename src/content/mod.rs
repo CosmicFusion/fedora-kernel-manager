@@ -1,4 +1,4 @@
-use crate::{kernel_pkg, KernelBranch, RunningKernelInfo};
+use crate::{kernel_pkg, KernelBranch, RunningKernelInfo, sched_ext};
 use adw::prelude::*;
 use adw::ExpanderRow;
 use async_channel::Receiver;
@@ -150,7 +150,11 @@ pub fn content(
         .build();
     config_kernel_button.add_css_class("circular");
 
-    config_kernel_button.connect_clicked(clone!(@weak content_stack => move |_| {
+    config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window => move |_| {
+            content_stack.add_named(
+        &sched_ext::sched_ext_page(&content_stack, &window),
+        Some("sched_ext_page"),
+    );
         content_stack.set_visible_child_name("sched_ext_page")
     }));
 

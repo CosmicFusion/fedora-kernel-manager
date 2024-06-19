@@ -4,11 +4,12 @@ use adw::prelude::*;
 use glib::*;
 use gtk::prelude::*;
 use gtk::*;
-use std::{fs, io};
+use std::{fs, io, thread};
 use std::cell::RefCell;
 use std::fs::*;
 use std::process::Stdio;
 use std::rc::Rc;
+use std::time::Duration;
 use duct::cmd;
 use gtk::AccessibleRole::Command;
 
@@ -63,7 +64,7 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
         &kernel_badges_size_group1,
     );
 
-    let selected_scx_sched = Rc::new(RefCell::new(initial_running_kernel_info.sched));
+    let selected_scx_sched = Rc::new(RefCell::new(initial_running_kernel_info.clone().sched));
 
     let cmd_status_dialog = adw::MessageDialog::builder()
         .transient_for(window)
@@ -113,19 +114,21 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
 
     back_button.add_css_class("pill");
 
-    back_button.connect_clicked(clone!(@weak content_stack => move |_| {
-        content_stack.set_visible_child_name("content_page")
+    back_button.connect_clicked(clone!(@weak content_stack, @weak main_box => move |_| {
+        content_stack.set_visible_child_name("content_page");
+        content_stack.remove(&main_box);
     }));
 
     let apply_button = gtk::Button::builder()
         .halign(Align::End)
         .label("Apply Changes")
+        .sensitive(false)
         .build();
 
     apply_button.add_css_class("pill");
     apply_button.add_css_class("destructive-action");
 
-    apply_button.connect_clicked(clone! (@weak badge_box, @weak kernel_badges_size_group, @weak kernel_badges_size_group0, @weak kernel_badges_size_group1 => move |_| {
+    apply_button.connect_clicked(clone! (@weak badge_box, @weak kernel_badges_size_group, @weak kernel_badges_size_group0, @weak kernel_badges_size_group1, @weak selected_scx_sched => move |_| {
         let selected_scx_sched_clone1 = selected_scx_sched.borrow().clone();
 
         match change_scx_scheduler(&selected_scx_sched_clone1,
@@ -150,8 +153,33 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
     let cancel_button = gtk::Button::builder()
         .halign(Align::End)
         .label("Cancel Changes")
+        .sensitive(false)
         .build();
     cancel_button.add_css_class("pill");
+
+    //
+    let (loop0_sender, loop0_receiver) = async_channel::unbounded();
+    let loop0_sender = loop0_sender.clone();
+
+    std::thread::spawn(move || loop {
+        loop0_sender.send_blocking(false).expect("error on loop0");
+        thread::sleep(Duration::from_millis(100));
+    });
+
+    let loop0_context = MainContext::default();
+    // The main loop executes the asynchronous block
+    loop0_context.spawn_local(clone!(@weak apply_button, @weak cancel_button, @strong selected_scx_sched, @strong initial_running_kernel_info => async move {
+        while let Ok(_state) = loop0_receiver.recv().await {
+            if *selected_scx_sched.borrow() == initial_running_kernel_info.sched {
+                apply_button.set_sensitive(false);
+                cancel_button.set_sensitive(false);
+            } else {
+                apply_button.set_sensitive(true);
+                cancel_button.set_sensitive(true);
+            }
+        }
+    }));
+    //
 
     window_bottombar.append(&back_button);
     window_bottombar.append(&cancel_button);
