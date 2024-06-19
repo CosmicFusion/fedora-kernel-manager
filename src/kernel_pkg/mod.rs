@@ -130,6 +130,12 @@ fn add_package_rows(
                 .to_owned()
                 .unwrap()
                 .to_string();
+            let kernel_package_version = match Command::new("/usr/lib/fedora-kernel-manager/scripts/get_version.sh")
+                .args([&kernel_package])
+                .output() {
+                Ok(t) => String::from_utf8(t.stdout).unwrap(),
+                _ => "Error".to_owned()
+            };
 
             let (log_loop_sender, log_loop_receiver) = async_channel::unbounded();
             let log_loop_sender: async_channel::Sender<String> = log_loop_sender.clone();
@@ -193,8 +199,7 @@ fn add_package_rows(
             kernel_remove_button.add_css_class("destructive-action");
             kernel_expander_row.add_suffix(&kernel_status_icon);
             kernel_expander_row.set_title(&kernel_name);
-            //kernel_expander_row.set_subtitle(&kernel_package_version);
-            //
+            kernel_expander_row.set_subtitle(&kernel_package_version);
             kernel_content_row.add_prefix(&kernel_description_label);
             kernel_action_box.append(&kernel_remove_button);
             kernel_action_box.append(&kernel_install_button);
@@ -377,26 +382,15 @@ fn add_package_rows(
 
 const KERNEL_MODIFY_PROG: &str = r###"
 #! /bin/bash
-
-set -e
-
 PACKAGE="$0"
-
-if rpm -q "${PACKAGE}"
-then
-     dnf remove -y "${PACKAGE}"
-else
-     dnf install -y "${PACKAGE}"
-fi
-
-exit 0
+pkexec /usr/lib/fedora-kernel-manager/scripts/modify_package.sh "${PACKAGE}"
 "###;
 fn kernel_modify(
     log_loop_sender: async_channel::Sender<String>,
     kernel_pkg: &str,
 ) -> Result<(), std::boxed::Box<dyn Error + Send + Sync>> {
     let (pipe_reader, pipe_writer) = os_pipe::pipe()?;
-    let child = cmd!("pkexec", "bash", "-c", KERNEL_MODIFY_PROG, kernel_pkg)
+    let child = cmd!("bash", "-c", KERNEL_MODIFY_PROG, kernel_pkg)
         .stderr_to_stdout()
         .stdout_file(pipe_writer)
         .start()?;
