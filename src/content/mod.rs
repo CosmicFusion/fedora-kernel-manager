@@ -146,9 +146,14 @@ pub fn content(
         .height_request(50)
         .width_request(50)
         .tooltip_text("Configure Sched_EXT settings")
+        .sensitive(is_scx_kernel())
         .hexpand(true)
         .build();
     config_kernel_button.add_css_class("circular");
+
+    if ! is_scx_kernel() {
+        config_kernel_button.set_tooltip_text(Some("Currently running kernel doesn't support Sched-EXT"));
+    }
 
     config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window => move |_| {
             content_stack.add_named(
@@ -412,8 +417,15 @@ pub fn get_running_kernel_info() -> RunningKernelInfo {
     info
 }
 
-pub fn get_current_scheduler(version: String) -> String {
+fn is_scx_kernel() -> bool {
     if Path::new("/sys/kernel/sched_ext/root/ops").exists() {
+        true
+    } else {
+        false
+    }
+}
+pub fn get_current_scheduler(version: String) -> String {
+    if is_scx_kernel() {
         println!("sched_ext is detected, getting scx scheduler");
         let scx_sched = match fs::read_to_string("/sys/kernel/sched_ext/root/ops") {
             Ok(t) => t,

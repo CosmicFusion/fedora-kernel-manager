@@ -150,13 +150,6 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
         };
     }));
 
-    let cancel_button = gtk::Button::builder()
-        .halign(Align::End)
-        .label("Cancel Changes")
-        .sensitive(false)
-        .build();
-    cancel_button.add_css_class("pill");
-
     //
     let (loop0_sender, loop0_receiver) = async_channel::unbounded();
     let loop0_sender = loop0_sender.clone();
@@ -168,21 +161,18 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
 
     let loop0_context = MainContext::default();
     // The main loop executes the asynchronous block
-    loop0_context.spawn_local(clone!(@weak apply_button, @weak cancel_button, @strong selected_scx_sched, @strong initial_running_kernel_info => async move {
+    loop0_context.spawn_local(clone!(@weak apply_button, @strong selected_scx_sched, @strong initial_running_kernel_info => async move {
         while let Ok(_state) = loop0_receiver.recv().await {
             if *selected_scx_sched.borrow() == initial_running_kernel_info.sched {
                 apply_button.set_sensitive(false);
-                cancel_button.set_sensitive(false);
             } else {
                 apply_button.set_sensitive(true);
-                cancel_button.set_sensitive(true);
             }
         }
     }));
     //
 
     window_bottombar.append(&back_button);
-    window_bottombar.append(&cancel_button);
     window_bottombar.append(&apply_button);
 
     main_box.append(&badge_box);

@@ -1,4 +1,8 @@
-use crate::{content, kernel_pkg, sched_ext, KernelBranch, PRETTY_NAME};
+use crate::APP_GITHUB;
+use crate::VERSION;
+use crate::APP_ID;
+use crate::APP_ICON;
+use crate::{content, kernel_pkg, sched_ext, KernelBranch};
 use adw::prelude::*;
 use adw::*;
 use glib::property::PropertyGet;
@@ -59,7 +63,7 @@ pub fn build_ui(app: &adw::Application) {
     }));
 
     let window_headerbar = adw::HeaderBar::builder()
-        .title_widget(&adw::WindowTitle::builder().title(PRETTY_NAME).build())
+        .title_widget(&adw::WindowTitle::builder().title("Fedora Kernel Manager").build())
         .build();
 
     let content_stack = gtk::Stack::builder()
@@ -74,6 +78,8 @@ pub fn build_ui(app: &adw::Application) {
         .width_request(600)
         .height_request(600)
         .resizable(false)
+        .icon_name(APP_ICON)
+        .startup_id(APP_ID)
         .build();
 
     content_stack.add_named(
@@ -97,6 +103,24 @@ pub fn build_ui(app: &adw::Application) {
         }
         glib::Propagation::Proceed
     });
+
+    let credits_button = gtk::Button::builder()
+        .icon_name("dialog-information-symbolic")
+        .build();
+
+    let credits_window = adw::AboutWindow::builder()
+        .application_icon(APP_ICON)
+        .application_name("Fedora Kernel Manager")
+        .transient_for(&window)
+        .version(VERSION)
+        .hide_on_close(true)
+        .developer_name("Cosmo")
+        .issue_url(APP_GITHUB.to_owned() + "/issues")
+        .build();
+
+    window_headerbar.pack_end(&credits_button);
+    credits_button
+        .connect_clicked(clone!(@weak credits_button => move |_| credits_window.present()));
 
     window.present();
 }

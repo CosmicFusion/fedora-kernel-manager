@@ -10,7 +10,9 @@ use gtk::*;
 use crate::gdk::Display;
 
 const APP_ID: &str = "com.github.cosmicfusion.fedora-kernel-manager";
-const PRETTY_NAME: &str = "Fedora Kernel Manager";
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const APP_ICON: &str = "com.github.cosmicfusion.fedora-kernel-manager";
+pub const APP_GITHUB: &str = "https://github.com/CosmicFusion/fedora-kernel-manager";
 
 #[derive(Clone)]
 struct RunningKernelInfo {
