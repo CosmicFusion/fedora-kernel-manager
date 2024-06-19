@@ -15,6 +15,9 @@ use std::rc::Rc;
 use std::{thread, time};
 
 pub fn build_ui(app: &adw::Application) {
+    gtk::glib::set_prgname(Some("Fedora Kernel Manager"));
+    glib::set_application_name("Fedora Kernel Manager");
+
     let internet_connected = Rc::new(RefCell::new(false));
     let selected_kernel_branch: Rc<RefCell<KernelBranch>> = Rc::new(RefCell::new(KernelBranch {
         name: "?".to_owned(),
