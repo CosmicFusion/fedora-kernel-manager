@@ -226,7 +226,7 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow,
         .build();
 
     let data = fs::read_to_string(
-        "/home/ward/RustroverProjects/fedora-kernel-manager/data/scx_scheds.json",
+        "/usr/lib/fedora-kernel-manager/scx_scheds.json",
     )
         .expect("Unable to read file");
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
@@ -307,7 +307,7 @@ fn change_scx_scheduler(scx_sched: &str,
                         kernel_badges_size_group: &gtk::SizeGroup,
                         kernel_badges_size_group0: &gtk::SizeGroup,
                         kernel_badges_size_group1: &gtk::SizeGroup,) -> Result<(), io::Error> {
-    cmd!("pkexec", "bash", "-c", format!("/home/ward/RustroverProjects/fedora-kernel-manager/data/scripts/change_scx.sh {}", scx_sched)).run()?;
+    cmd!("pkexec", "bash", "-c", format!("/usr/lib/fedora-kernel-manager/scripts/scripts/change_scx.sh {}", scx_sched)).run()?;
     create_current_sched_badge(
         &badge_box,
         &get_running_kernel_info(),

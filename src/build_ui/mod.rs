@@ -20,6 +20,7 @@ pub fn build_ui(app: &adw::Application) {
         name: "?".to_owned(),
         db_url: "?".to_owned(),
         db: "?".to_owned(),
+        init_script: "?".to_owned(),
     }));
     let db_load_complete = Rc::new(RefCell::new(false));
 

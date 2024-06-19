@@ -359,7 +359,7 @@ pub fn create_kernel_badge(
 fn get_kernel_branches() -> Vec<KernelBranch> {
     let mut kernel_branches_array: Vec<KernelBranch> = Vec::new();
     let data = fs::read_to_string(
-        "/home/ward/RustroverProjects/fedora-kernel-manager/data/kernel_branches.json",
+        "/usr/lib/fedora-kernel-manager/kernel_branches.json",
     )
     .expect("Unable to read file");
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
@@ -372,6 +372,7 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
             let branch = KernelBranch {
                 name: branch["name"].as_str().to_owned().unwrap().to_string(),
                 db_url: branch["db_url"].as_str().to_owned().unwrap().to_string(),
+                init_script: branch["init_script"].as_str().to_owned().unwrap().to_string(),
                 db: reqwest::blocking::get(
                     branch["db_url"].as_str().to_owned().unwrap().to_string(),
                 )
@@ -380,6 +381,8 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
                 .unwrap(),
             };
             println!("Download Complete!");
+            println!("Running {} init script.", &branch.name);
+            let _ = cmd!(&branch.init_script).run();
             kernel_branches_array.push(branch)
         }
     };
