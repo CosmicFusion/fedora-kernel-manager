@@ -86,7 +86,7 @@ pub fn build_ui(app: &adw::Application) {
         Some("content_page"),
     );
     content_stack.add_named(
-        &sched_ext::sched_ext_page(&content_stack),
+        &sched_ext::sched_ext_page(&content_stack, &window),
         Some("sched_ext_page"),
     );
 

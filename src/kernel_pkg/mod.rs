@@ -463,7 +463,7 @@ fn get_cpu_feature_level() -> String {
             .trim_end_matches("(supported, searched)")
             .trim()
             .to_string(),
-        _ => "x86_64-v1".to_string(),
+        _ => "x86-64-v1".to_string(),
     };
     result
 }

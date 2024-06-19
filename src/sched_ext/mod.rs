@@ -4,10 +4,13 @@ use adw::prelude::*;
 use glib::*;
 use gtk::prelude::*;
 use gtk::*;
-use std::fs;
+use std::{fs, io};
 use std::fs::*;
+use std::process::Stdio;
+use duct::cmd;
+use gtk::AccessibleRole::Command;
 
-pub fn sched_ext_page(content_stack: &gtk::Stack) -> gtk::Box {
+pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindow,) -> gtk::Box {
     let main_box = gtk::Box::builder()
         .hexpand(true)
         .vexpand(true)
@@ -60,7 +63,12 @@ pub fn sched_ext_page(content_stack: &gtk::Stack) -> gtk::Box {
         .subtitle("Select Sched-EXT Scheduler")
         .build();
 
-    scx_sched_expander_row.add_row(&scx_sched_expandable(&scx_sched_expander_row));
+    scx_sched_expander_row.add_row(&scx_sched_expandable(&scx_sched_expander_row,
+                                                         &window,
+                                                         &badge_box,
+                                                         &kernel_badges_size_group,
+                                                         &kernel_badges_size_group0,
+                                                         &kernel_badges_size_group1,));
 
     let scx_sched_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
@@ -147,7 +155,13 @@ fn create_current_sched_badge(
     ));
 }
 
-fn scx_sched_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
+fn scx_sched_expandable(expander_row: &adw::ExpanderRow,
+                        window: &adw::ApplicationWindow,
+                        badge_box: &gtk::Box,
+                        kernel_badges_size_group: &gtk::SizeGroup,
+                        kernel_badges_size_group0: &gtk::SizeGroup,
+                        kernel_badges_size_group1: &gtk::SizeGroup,
+) -> gtk::ListBox {
     let searchbar = gtk::SearchEntry::builder().search_delay(500).build();
     searchbar.add_css_class("round-border-only-top");
 
@@ -181,15 +195,38 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow) -> gtk::ListBox {
                 .build();
             let branch_row = adw::ActionRow::builder()
                 .activatable_widget(&sched_checkbutton)
-                .title(sched)
+                .title(&sched)
                 .build();
             branch_row.add_prefix(&sched_checkbutton);
             sched_checkbutton.set_group(Some(&null_checkbutton));
             sched_container.append(&branch_row);
+            let cmd_status_dialog = adw::MessageDialog::builder()
+                .transient_for(window)
+                .hide_on_close(true)
+                .build();
+            cmd_status_dialog.add_response(
+                "cmd_status_dialog_ok",
+                "Ok",
+            );
             sched_checkbutton.connect_toggled(
-                clone!(@weak sched_checkbutton, @weak expander_row => move |_| {
+                clone!(@weak sched_checkbutton, @weak expander_row, @weak badge_box, @strong get_running_kernel_info, @weak kernel_badges_size_group, @weak kernel_badges_size_group0, @weak kernel_badges_size_group1 => move |_| {
                     if sched_checkbutton.is_active() == true {
                         expander_row.set_title(&branch_row.title());
+                        match change_scx_scheduler(&sched,         &badge_box,
+        &kernel_badges_size_group,
+        &kernel_badges_size_group0,
+        &kernel_badges_size_group1,) {
+                            Ok(_) => {
+                                cmd_status_dialog.set_heading(Some("Success!"));
+                                cmd_status_dialog.set_body(format!("SCX has been set to: {}", &sched).as_str());
+                                cmd_status_dialog.present()
+                            }
+                            Err(_) => {
+                                cmd_status_dialog.set_heading(Some("Failed!"));
+                                cmd_status_dialog.set_body(format!("SCX couldn't be has been set to: {}", &sched).as_str());
+                                cmd_status_dialog.present()
+                            }
+                        };
                     }
                 }),
             );
@@ -240,4 +277,20 @@ fn get_current_scx_scheduler() -> String {
     };
 
     scx_sched
+}
+
+fn change_scx_scheduler(scx_sched: &str,
+                        badge_box: &gtk::Box,
+                        kernel_badges_size_group: &gtk::SizeGroup,
+                        kernel_badges_size_group0: &gtk::SizeGroup,
+                        kernel_badges_size_group1: &gtk::SizeGroup,) -> Result<(), io::Error> {
+    cmd!("pkexec", "bash", "-c", format!("/home/ward/RustroverProjects/fedora-kernel-manager/data/scripts/change_scx.sh {}", scx_sched)).run()?;
+    create_current_sched_badge(
+        &badge_box,
+        &get_running_kernel_info(),
+        &kernel_badges_size_group,
+        &kernel_badges_size_group0,
+        &kernel_badges_size_group1,
+    );
+    Ok(())
 }
