@@ -272,7 +272,7 @@ fn kernel_branch_expandable(
     }
                 }
                 _ => {
-                    window_banner.set_title(t!("banner_text_url_error"));
+                    window_banner.set_title(&t!("banner_text_url_error").to_string());
                     window_banner.set_revealed(true);
                     loading_box.set_visible(false);
                 }
@@ -517,7 +517,7 @@ fn create_kernel_badges(
         &kernel_badges_size_group1,
     ));
     badge_box.append(&create_kernel_badge(
-        "Latest Version",
+        &t!("kernel_badge_latest_version_label").to_string(),
         kernel_version,
         "background-accent-bg",
         &kernel_badges_size_group,
@@ -525,7 +525,7 @@ fn create_kernel_badges(
         &kernel_badges_size_group1,
     ));
     badge_box.append(&create_kernel_badge(
-        "Running Version",
+        &t!("kernel_badge_running_version_label").to_string(),
         &running_kernel_info.version,
         &version_css_style,
         &kernel_badges_size_group,
@@ -533,7 +533,7 @@ fn create_kernel_badges(
         &kernel_badges_size_group1,
     ));
     badge_box.append(&create_kernel_badge(
-        "Running Kernel",
+        &t!("kernel_badge_running_kernel_label").to_string(),
         &running_kernel_info.kernel,
         &version_css_style,
         &kernel_badges_size_group,
@@ -541,7 +541,7 @@ fn create_kernel_badges(
         &kernel_badges_size_group1,
     ));
     badge_box.append(&create_kernel_badge(
-        "Running Sched",
+        &t!("kernel_badge_running_sched_label").to_string(),
         &running_kernel_info.sched,
         "background-accent-bg",
         &kernel_badges_size_group,

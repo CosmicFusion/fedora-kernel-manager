@@ -39,7 +39,7 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
     main_icon.add_css_class("symbolic-accent-bg");
 
     let main_label = gtk::Label::builder()
-        .label("Sched-EXT Configuration Settings")
+        .label(t!("sched_ext_main_label_label"))
         .hexpand(true)
         .margin_start(10)
         .margin_end(10)
@@ -73,7 +73,7 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
     cmd_status_dialog.add_response("cmd_status_dialog_ok", "Ok");
 
     let scx_sched_expander_row = adw::ExpanderRow::builder()
-        .subtitle("Select Sched-EXT Scheduler")
+        .subtitle(t!("scx_sched_expander_row_subtitle"))
         .build();
 
     scx_sched_expander_row.add_row(&scx_sched_expandable(
@@ -121,7 +121,7 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
 
     let apply_button = gtk::Button::builder()
         .halign(Align::End)
-        .label("Apply Changes")
+        .label(t!("sched_ext_apply_button_label"))
         .sensitive(false)
         .build();
 
@@ -137,8 +137,8 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
                                    &kernel_badges_size_group0,
                                    &kernel_badges_size_group1,) {
             Ok(_) => {
-                cmd_status_dialog.set_heading(Some("Success!"));
-                cmd_status_dialog.set_body(format!("SCX has been set to: {}", &selected_scx_sched_clone1).as_str());
+                cmd_status_dialog.set_heading(Some(&t!("sched_ext_cmd_status_dialog_heading_success").to_string()));
+                cmd_status_dialog.set_body(format!("{}: {}", t!("sched_ext_cmd_status_dialog_body_success"), &selected_scx_sched_clone1).as_str());
                 cmd_status_dialog.present();
                 create_current_sched_badge(
                     &badge_box,
@@ -149,8 +149,8 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
                 );
             }
             Err(_) => {
-                cmd_status_dialog.set_heading(Some("Failed!"));
-                cmd_status_dialog.set_body(format!("SCX couldn't be has been set to: {}", &selected_scx_sched_clone1).as_str());
+                cmd_status_dialog.set_heading(Some(&t!("sched_ext_cmd_status_dialog_heading_failed").to_string()));
+                cmd_status_dialog.set_body(format!("{}: {}", t!("sched_ext_cmd_status_dialog_body_failed"), &selected_scx_sched_clone1).as_str());
                 cmd_status_dialog.present();
                 create_current_sched_badge(
                     &badge_box,
@@ -209,7 +209,7 @@ fn create_current_sched_badge(
     }
 
     badge_box.append(&crate::content::create_kernel_badge(
-        "Running Sched",
+        &t!("kernel_badge_running_sched_label").to_string(),
         &running_kernel_info.sched,
         "background-accent-bg",
         &kernel_badges_size_group,
@@ -237,7 +237,7 @@ fn scx_sched_expandable(
     sched_container.add_css_class("boxed-list");
 
     let null_checkbutton = gtk::CheckButton::builder()
-        .label("No branch selected")
+        .label(t!("sched_ext_null_checkbutton_label"))
         .build();
 
     let data = fs::read_to_string("/usr/lib/fedora-kernel-manager/scx_scheds.json")

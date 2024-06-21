@@ -31,10 +31,11 @@ pub fn kernel_pkg_page(
 
     let main_label = gtk::Label::builder()
         .label(format!(
-            "Available Kernel Packages for {}",
+            "{} {}", t!("kernel_main_label_label"),
             &selected_kernel_branch_clone0.name
         ))
         .hexpand(true)
+        .halign(Align::Center)
         .margin_start(10)
         .margin_end(10)
         .margin_bottom(20)
@@ -219,7 +220,7 @@ fn add_package_rows(
                 .pixel_size(24)
                 .valign(Align::Center)
                 .visible(false)
-                .tooltip_text("Installed")
+                .tooltip_text(t!("Installed"))
                 .build();
             let kernel_description_label = gtk::Label::builder()
                 .label(&kernel_description)
@@ -231,8 +232,8 @@ fn add_package_rows(
                 .margin_top(5)
                 .margin_bottom(5)
                 .valign(gtk::Align::Center)
-                .label("Install")
-                .tooltip_text("Install this kernel")
+                .label(t!("kernel_install_button_label"))
+                .tooltip_text(t!("kernel_install_button_tooltip_text"))
                 .sensitive(false)
                 .build();
             kernel_install_button.add_css_class("suggested-action");
@@ -241,8 +242,8 @@ fn add_package_rows(
                 .margin_top(5)
                 .margin_bottom(5)
                 .valign(gtk::Align::Center)
-                .label("Uninstall")
-                .tooltip_text("Uninstall this kernel")
+                .label(t!("kernel_uninstall_button_label"))
+                .tooltip_text(t!("kernel_uninstall_button_tooltip_text"))
                 .sensitive(false)
                 .build();
             let kernel_action_box = gtk::Box::builder().homogeneous(true).build();
@@ -296,11 +297,11 @@ fn add_package_rows(
                 .extra_child(&kernel_install_log_terminal_scroll)
                 .width_request(400)
                 .height_request(200)
-                .heading("Installing Kernel")
+                .heading(t!("kernel_install_dialog_heading"))
                 .build();
-            kernel_install_dialog.add_response("kernel_install_dialog_ok", "OK");
+            kernel_install_dialog.add_response("kernel_install_dialog_ok", &t!("kernel_install_dialog_ok_label").to_string());
             kernel_install_dialog
-                .add_response("kernel_install_dialog_reboot", "Reboot Now (Optional)");
+                .add_response("kernel_install_dialog_reboot", &t!("kernel_install_dialog_reboot_label").to_string());
             kernel_install_dialog.set_response_appearance(
                 "kernel_install_dialog_reboot",
                 adw::ResponseAppearance::Suggested,
@@ -328,10 +329,10 @@ fn add_package_rows(
                             //    kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", true);
                             //}
                             kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", true);
-                            kernel_install_dialog.set_body("Kernel installation was successful!");
+                            kernel_install_dialog.set_body(&t!("kernel_install_dialog_body_successful").to_string());
                         } else {
                             kernel_install_dialog.set_response_enabled("kernel_install_dialog_ok", true);
-                            kernel_install_dialog.set_body("Kernel Installation Failed!");
+                            kernel_install_dialog.set_body(&t!("kernel_install_dialog_body_failed").to_string());
                             kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", false);
                         }
                     }
@@ -363,11 +364,11 @@ fn add_package_rows(
                         let command = kernel_modify(log_loop_sender_clone, &kernel_packages_clone);
                         match command {
                             Ok(_) => {
-                                println!("Status: kernel modify Successful");
+                                println!("{}", t!("log_status_kernel_modify_successful"));
                                 log_status_loop_sender_clone.send_blocking(true).expect("The channel needs to be open.");
                             }
                             Err(_) => {
-                                println!("Status: kernel modify Failed");
+                                println!("{}",  t!("log_status_kernel_modify_failed"));
                                 log_status_loop_sender_clone.send_blocking(false).expect("The channel needs to be open.");
                             }
                         }
@@ -393,11 +394,11 @@ fn add_package_rows(
                         let command = kernel_modify(log_loop_sender_clone, &kernel_packages_clone);
                         match command {
                             Ok(_) => {
-                                println!("Status: kernel modify Successful");
+                                println!("{}", t!("log_status_kernel_modify_successful"));
                                 log_status_loop_sender_clone.send_blocking(true).expect("The channel needs to be open.");
                             }
                             Err(_) => {
-                                println!("Status: kernel modify Failed");
+                                println!("{}", t!("log_status_kernel_modify_failed"));
                                 log_status_loop_sender_clone.send_blocking(false).expect("The channel needs to be open.");
                             }
                         }
@@ -457,10 +458,11 @@ fn kernel_modify(
 
 fn get_cpu_feature_level() -> String {
     let base_command = Command::new("/lib64/ld-linux-x86-64.so.2") // `ps` command...
-        .arg("--help") // with argument `axww`...
-        .stdout(Stdio::piped()) // of which we will pipe the output.
-        .spawn() // Once configured, we actually spawn the command...
-        .unwrap(); // and assert everything went right.
+        .arg("--help")
+        .env("LANG" ,"en_US")
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
     let grep_command = Command::new("grep")
         .arg("(supported, searched)")
         .stdin(Stdio::from(base_command.stdout.unwrap()))
