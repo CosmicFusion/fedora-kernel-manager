@@ -60,8 +60,10 @@ pub fn build_ui(app: &adw::Application) {
                 }
             } else {
                 *internet_connected_status.borrow_mut()=false;
+                if window_banner.title() != "Kernel Database URL Error: Please Restart!" {
                 window_banner.set_title(banner_text);
                 window_banner.set_revealed(true)
+                    }
             }
         }
     }));
@@ -92,6 +94,7 @@ pub fn build_ui(app: &adw::Application) {
             &selected_kernel_branch2,
             &db_load_complete,
             &window,
+            &window_banner
         ),
         Some("content_page"),
     );

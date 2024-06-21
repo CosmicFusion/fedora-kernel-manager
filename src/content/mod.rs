@@ -21,6 +21,7 @@ pub fn content(
     selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
     db_load_complete: &Rc<RefCell<bool>>,
     window: &adw::ApplicationWindow,
+    window_banner: &adw::Banner,
 ) -> gtk::Box {
     let running_kernel_info = get_running_kernel_info();
 
@@ -89,12 +90,27 @@ pub fn content(
         .subtitle("Kernel Branch")
         .build();
 
+
     kernel_branch_expander_row.add_row(&kernel_branch_expandable(
         &kernel_branch_expander_row,
+        &window_banner,
+        &loading_box,
         selected_kernel_branch,
         db_load_complete,
         get_kernel_branches_receiver.clone(),
     ));
+
+   // match .recv_blocking() {
+   //     Ok(t) => {
+//
+    //        ));
+    //    }
+    //    _ => {
+
+    //    }
+    //
+
+
 
     let kernel_branch_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
@@ -202,9 +218,11 @@ pub fn content(
 
 fn kernel_branch_expandable(
     expander_row: &adw::ExpanderRow,
+    window_banner: &adw::Banner,
+    loading_box: &gtk::Box,
     selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
     db_load_complete: &Rc<RefCell<bool>>,
-    get_kernel_branches_receiver: Receiver<Vec<KernelBranch>>,
+    get_kernel_branches_receiver: Receiver<Result<Vec<KernelBranch>, reqwest::Error>>,
 ) -> gtk::ListBox {
     let searchbar = gtk::SearchEntry::builder().search_delay(500).build();
     searchbar.add_css_class("round-border-only-top");
@@ -226,9 +244,11 @@ fn kernel_branch_expandable(
 
     let get_kernel_branches_loop_context = MainContext::default();
     // The main loop executes the asynchronous block
-    get_kernel_branches_loop_context.spawn_local(clone!(@weak expander_row, @weak branch_container, @strong selected_kernel_branch, @strong db_load_complete => async move {
+    get_kernel_branches_loop_context.spawn_local(clone!(@weak expander_row, @weak branch_container, @strong selected_kernel_branch, @weak loading_box, @weak window_banner, @strong db_load_complete => async move {
         while let Ok(data) = get_kernel_branches_receiver.recv().await {
-for branch in data {
+            match data {
+                Ok(t) => {
+                    for branch in t {
         let branch_clone0 = branch.clone();
         let branch_clone1 = branch.clone();
         let branch_checkbutton = gtk::CheckButton::builder()
@@ -264,6 +284,13 @@ for branch in data {
                 *db_load_complete.borrow_mut() = true;
                 println!("DB load complete!")
     }
+                }
+                _ => {
+                    window_banner.set_title("Kernel Database URL Error: Please Restart!");
+                    window_banner.set_revealed(true);
+                    loading_box.set_visible(false);
+                }
+            }
         }
     }));
 
@@ -356,7 +383,7 @@ pub fn create_kernel_badge(
     boxedlist
 }
 
-fn get_kernel_branches() -> Vec<KernelBranch> {
+fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
     let mut kernel_branches_array: Vec<KernelBranch> = Vec::new();
     let data = fs::read_to_string(
         "/usr/lib/fedora-kernel-manager/kernel_branches.json",
@@ -365,20 +392,21 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(branches) = &res["branches"] {
         for branch in branches {
+            let branch_name = branch["name"].as_str().to_owned().unwrap().to_string();
+            let branch_db_url = branch["db_url"].as_str().to_owned().unwrap().to_string();
+            let branch_init_script = branch["init_script"].as_str().to_owned().unwrap().to_string();
             println!(
                 "Downloading & Parsing package DB for {}.",
-                branch["name"].as_str().to_owned().unwrap().to_string()
+                &branch_name
             );
+            let branch_db = reqwest::blocking::get(
+                branch["db_url"].as_str().to_owned().unwrap().to_string(),
+            )?.text().unwrap();
             let branch = KernelBranch {
-                name: branch["name"].as_str().to_owned().unwrap().to_string(),
-                db_url: branch["db_url"].as_str().to_owned().unwrap().to_string(),
-                init_script: branch["init_script"].as_str().to_owned().unwrap().to_string(),
-                db: reqwest::blocking::get(
-                    branch["db_url"].as_str().to_owned().unwrap().to_string(),
-                )
-                .unwrap()
-                .text()
-                .unwrap(),
+                name: branch_name,
+                db_url: branch_db_url,
+                init_script: branch_init_script,
+                db: branch_db
             };
             println!("Download Complete!");
             println!("Running {} init script.", &branch.name);
@@ -390,7 +418,7 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
         }
     };
 
-    kernel_branches_array
+    Ok(kernel_branches_array)
 }
 pub fn get_running_kernel_info() -> RunningKernelInfo {
     let kernel = match Command::new("uname")
