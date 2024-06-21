@@ -1,19 +1,19 @@
 use crate::content::get_running_kernel_info;
 use crate::{KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
+use duct::cmd;
 use glib::*;
 use gtk::prelude::*;
+use gtk::AccessibleRole::Command;
 use gtk::*;
-use std::{fs, io, thread};
 use std::cell::RefCell;
 use std::fs::*;
 use std::process::Stdio;
 use std::rc::Rc;
 use std::time::Duration;
-use duct::cmd;
-use gtk::AccessibleRole::Command;
+use std::{fs, io, thread};
 
-pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindow,) -> gtk::Box {
+pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindow) -> gtk::Box {
     let main_box = gtk::Box::builder()
         .hexpand(true)
         .vexpand(true)
@@ -70,16 +70,16 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
         .transient_for(window)
         .hide_on_close(true)
         .build();
-    cmd_status_dialog.add_response(
-        "cmd_status_dialog_ok",
-        "Ok",
-    );
+    cmd_status_dialog.add_response("cmd_status_dialog_ok", "Ok");
 
     let scx_sched_expander_row = adw::ExpanderRow::builder()
         .subtitle("Select Sched-EXT Scheduler")
         .build();
 
-    scx_sched_expander_row.add_row(&scx_sched_expandable(&scx_sched_expander_row, &selected_scx_sched));
+    scx_sched_expander_row.add_row(&scx_sched_expandable(
+        &scx_sched_expander_row,
+        &selected_scx_sched,
+    ));
 
     let scx_sched_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
@@ -205,8 +205,10 @@ fn create_current_sched_badge(
     ));
 }
 
-fn scx_sched_expandable(expander_row: &adw::ExpanderRow,
-                        selected_scx_sched: &Rc<RefCell<String>>) -> gtk::ListBox {
+fn scx_sched_expandable(
+    expander_row: &adw::ExpanderRow,
+    selected_scx_sched: &Rc<RefCell<String>>,
+) -> gtk::ListBox {
     let searchbar = gtk::SearchEntry::builder().search_delay(500).build();
     searchbar.add_css_class("round-border-only-top");
 
@@ -225,9 +227,7 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow,
         .label("No branch selected")
         .build();
 
-    let data = fs::read_to_string(
-        "/usr/lib/fedora-kernel-manager/scx_scheds.json",
-    )
+    let data = fs::read_to_string("/usr/lib/fedora-kernel-manager/scx_scheds.json")
         .expect("Unable to read file");
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(scheds) = &res["scx_schedulers"] {
@@ -249,7 +249,7 @@ fn scx_sched_expandable(expander_row: &adw::ExpanderRow,
                 clone!(@weak sched_checkbutton, @weak expander_row, @strong selected_scx_sched => move |_| {
                     if sched_checkbutton.is_active() == true {
                         expander_row.set_title(&branch_row.title());
-                        *selected_scx_sched.borrow_mut() = sched.to_string();;
+                        *selected_scx_sched.borrow_mut() = sched.to_string();
                     }
                 }),
             );
@@ -302,12 +302,23 @@ fn get_current_scx_scheduler() -> String {
     scx_sched
 }
 
-fn change_scx_scheduler(scx_sched: &str,
-                        badge_box: &gtk::Box,
-                        kernel_badges_size_group: &gtk::SizeGroup,
-                        kernel_badges_size_group0: &gtk::SizeGroup,
-                        kernel_badges_size_group1: &gtk::SizeGroup,) -> Result<(), io::Error> {
-    cmd!("pkexec", "bash", "-c", format!("/usr/lib/fedora-kernel-manager/scripts/scripts/change_scx.sh {}", scx_sched)).run()?;
+fn change_scx_scheduler(
+    scx_sched: &str,
+    badge_box: &gtk::Box,
+    kernel_badges_size_group: &gtk::SizeGroup,
+    kernel_badges_size_group0: &gtk::SizeGroup,
+    kernel_badges_size_group1: &gtk::SizeGroup,
+) -> Result<(), io::Error> {
+    cmd!(
+        "pkexec",
+        "bash",
+        "-c",
+        format!(
+            "/usr/lib/fedora-kernel-manager/scripts/scripts/change_scx.sh {}",
+            scx_sched
+        )
+    )
+    .run()?;
     create_current_sched_badge(
         &badge_box,
         &get_running_kernel_info(),

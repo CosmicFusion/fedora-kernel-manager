@@ -148,26 +148,36 @@ fn add_package_rows(
     if let serde_json::Value::Array(kernels) = &res["kernels"] {
         for kernel in kernels {
             let kernel_name = kernel["name"].as_str().to_owned().unwrap().to_string();
-            let kernel_package = kernel["package"].as_str().to_owned().unwrap().to_string();
-            let kernel_description = kernel["description"]
+            let kernel_main_package = kernel["main_package"]
                 .as_str()
                 .to_owned()
                 .unwrap()
                 .to_string();
+            let kernel_packages = kernel["packages"].as_str().to_owned().unwrap().to_string();
             let kernel_min_x86_march = kernel["min_x86_march"]
                 .as_str()
                 .to_owned()
                 .unwrap()
                 .parse::<u32>()
                 .unwrap();
-            let kernel_package_version =
-                match Command::new("/usr/lib/fedora-kernel-manager/scripts/get_version.sh")
-                    .args([&kernel_package])
-                    .output()
-                {
-                    Ok(t) => String::from_utf8(t.stdout).unwrap(),
-                    _ => "Error".to_owned(),
-                };
+            let kernel_package_version = match Command::new(
+                "/usr/lib/fedora-kernel-manager/scripts/generate_package_info.sh",
+            )
+            .args(["description", &kernel_main_package])
+            .output()
+            {
+                Ok(t) => String::from_utf8(t.stdout).unwrap(),
+                _ => "Error".to_owned(),
+            };
+            let kernel_description = match Command::new(
+                "/usr/lib/fedora-kernel-manager/scripts/generate_package_info.sh",
+            )
+            .args(["description", &kernel_main_package])
+            .output()
+            {
+                Ok(t) => String::from_utf8(t.stdout).unwrap(),
+                _ => "Error".to_owned(),
+            };
 
             let (log_loop_sender, log_loop_receiver) = async_channel::unbounded();
             let log_loop_sender: async_channel::Sender<String> = log_loop_sender.clone();
@@ -181,11 +191,11 @@ fn add_package_rows(
             let kernel_status_loop_sender: async_channel::Sender<bool> =
                 kernel_status_loop_sender.clone();
 
-            let kernel_package_clone0 = kernel_package.clone();
+            let kernel_main_package_clone0 = kernel_main_package.clone();
 
             std::thread::spawn(move || loop {
                 let command_installed_status = Command::new("rpm")
-                    .args(["-q", &kernel_package_clone0])
+                    .args(["-q", &kernel_main_package_clone0])
                     .output()
                     .unwrap();
                 if command_installed_status.status.success() {
@@ -200,10 +210,10 @@ fn add_package_rows(
                 std::thread::sleep(Duration::from_secs(6));
             });
 
-            let kernel_package_clone0 = kernel_package.clone();
+            let kernel_main_package_clone0 = kernel_main_package.clone();
 
             let kernel_expander_row = kernel_package_row::KernelPackageRow::new();
-            kernel_expander_row.set_package(kernel_package_clone0);
+            kernel_expander_row.set_package(kernel_main_package_clone0);
             let kernel_status_icon = gtk::Image::builder()
                 .icon_name("emblem-default")
                 .pixel_size(24)
@@ -329,7 +339,7 @@ fn add_package_rows(
                 }
             }));
             //
-            kernel_install_button.connect_clicked(clone!(@weak kernel_install_log_terminal,@weak kernel_install_log_terminal_buffer, @weak kernel_install_dialog, @strong log_loop_sender, @strong log_status_loop_sender, @strong kernel_package => move |_| {
+            kernel_install_button.connect_clicked(clone!(@weak kernel_install_log_terminal,@weak kernel_install_log_terminal_buffer, @weak kernel_install_dialog, @strong log_loop_sender, @strong log_status_loop_sender, @strong kernel_packages => move |_| {
                 kernel_install_log_terminal_buffer.delete(&mut kernel_install_log_terminal_buffer.bounds().0, &mut kernel_install_log_terminal_buffer.bounds().1);
                 kernel_install_dialog.set_response_enabled("kernel_install_dialog_ok", false);
                 kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", false);
@@ -344,9 +354,9 @@ fn add_package_rows(
                 });
                 let log_status_loop_sender_clone = log_status_loop_sender.clone();
                 let log_loop_sender_clone= log_loop_sender.clone();
-                let kernel_package_clone = kernel_package.clone();
+                let kernel_packages_clone = kernel_packages.clone();
                         std::thread::spawn(move || {
-                        let command = kernel_modify(log_loop_sender_clone, &kernel_package_clone);
+                        let command = kernel_modify(log_loop_sender_clone, &kernel_packages_clone);
                         match command {
                             Ok(_) => {
                                 println!("Status: kernel modify Successful");
@@ -359,7 +369,7 @@ fn add_package_rows(
                         }
                 });
             }));
-            kernel_remove_button.connect_clicked(clone!(@weak kernel_install_log_terminal,@weak kernel_install_log_terminal_buffer, @weak kernel_install_dialog, @strong log_loop_sender, @strong log_status_loop_sender, @strong kernel_package  => move |_| {
+            kernel_remove_button.connect_clicked(clone!(@weak kernel_install_log_terminal,@weak kernel_install_log_terminal_buffer, @weak kernel_install_dialog, @strong log_loop_sender, @strong log_status_loop_sender, @strong kernel_packages  => move |_| {
                 kernel_install_log_terminal_buffer.delete(&mut kernel_install_log_terminal_buffer.bounds().0, &mut kernel_install_log_terminal_buffer.bounds().1);
                 kernel_install_dialog.set_response_enabled("kernel_install_dialog_ok", false);
                 kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", false);
@@ -374,9 +384,9 @@ fn add_package_rows(
                 });
                 let log_status_loop_sender_clone = log_status_loop_sender.clone();
                 let log_loop_sender_clone= log_loop_sender.clone();
-                let kernel_package_clone = kernel_package.clone();
+                let kernel_packages_clone = kernel_packages.clone();
                         std::thread::spawn(move || {
-                        let command = kernel_modify(log_loop_sender_clone, &kernel_package_clone);
+                        let command = kernel_modify(log_loop_sender_clone, &kernel_packages_clone);
                         match command {
                             Ok(_) => {
                                 println!("Status: kernel modify Successful");

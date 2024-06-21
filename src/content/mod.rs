@@ -1,4 +1,4 @@
-use crate::{kernel_pkg, KernelBranch, RunningKernelInfo, sched_ext};
+use crate::{kernel_pkg, sched_ext, KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
 use adw::ExpanderRow;
 use async_channel::Receiver;
@@ -90,7 +90,6 @@ pub fn content(
         .subtitle("Kernel Branch")
         .build();
 
-
     kernel_branch_expander_row.add_row(&kernel_branch_expandable(
         &kernel_branch_expander_row,
         &window_banner,
@@ -99,18 +98,6 @@ pub fn content(
         db_load_complete,
         get_kernel_branches_receiver.clone(),
     ));
-
-   // match .recv_blocking() {
-   //     Ok(t) => {
-//
-    //        ));
-    //    }
-    //    _ => {
-
-    //    }
-    //
-
-
 
     let kernel_branch_expander_row_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
@@ -167,8 +154,9 @@ pub fn content(
         .build();
     config_kernel_button.add_css_class("circular");
 
-    if ! is_scx_kernel() {
-        config_kernel_button.set_tooltip_text(Some("Currently running kernel doesn't support Sched-EXT"));
+    if !is_scx_kernel() {
+        config_kernel_button
+            .set_tooltip_text(Some("Currently running kernel doesn't support Sched-EXT"));
     }
 
     config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window => move |_| {
@@ -385,28 +373,28 @@ pub fn create_kernel_badge(
 
 fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
     let mut kernel_branches_array: Vec<KernelBranch> = Vec::new();
-    let data = fs::read_to_string(
-        "/usr/lib/fedora-kernel-manager/kernel_branches.json",
-    )
-    .expect("Unable to read file");
+    let data = fs::read_to_string("/usr/lib/fedora-kernel-manager/kernel_branches.json")
+        .expect("Unable to read file");
     let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
     if let serde_json::Value::Array(branches) = &res["branches"] {
         for branch in branches {
             let branch_name = branch["name"].as_str().to_owned().unwrap().to_string();
             let branch_db_url = branch["db_url"].as_str().to_owned().unwrap().to_string();
-            let branch_init_script = branch["init_script"].as_str().to_owned().unwrap().to_string();
-            println!(
-                "Downloading & Parsing package DB for {}.",
-                &branch_name
-            );
-            let branch_db = reqwest::blocking::get(
-                branch["db_url"].as_str().to_owned().unwrap().to_string(),
-            )?.text().unwrap();
+            let branch_init_script = branch["init_script"]
+                .as_str()
+                .to_owned()
+                .unwrap()
+                .to_string();
+            println!("Downloading & Parsing package DB for {}.", &branch_name);
+            let branch_db =
+                reqwest::blocking::get(branch["db_url"].as_str().to_owned().unwrap().to_string())?
+                    .text()
+                    .unwrap();
             let branch = KernelBranch {
                 name: branch_name,
                 db_url: branch_db_url,
                 init_script: branch_init_script,
-                db: branch_db
+                db: branch_db,
             };
             println!("Download Complete!");
             println!("Running {} init script.", &branch.name);

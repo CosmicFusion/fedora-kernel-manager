@@ -1,7 +1,7 @@
 use crate::APP_GITHUB;
-use crate::VERSION;
-use crate::APP_ID;
 use crate::APP_ICON;
+use crate::APP_ID;
+use crate::VERSION;
 use crate::{content, kernel_pkg, sched_ext, KernelBranch};
 use adw::prelude::*;
 use adw::*;
@@ -69,7 +69,11 @@ pub fn build_ui(app: &adw::Application) {
     }));
 
     let window_headerbar = adw::HeaderBar::builder()
-        .title_widget(&adw::WindowTitle::builder().title("Fedora Kernel Manager").build())
+        .title_widget(
+            &adw::WindowTitle::builder()
+                .title("Fedora Kernel Manager")
+                .build(),
+        )
         .build();
 
     let content_stack = gtk::Stack::builder()
@@ -94,7 +98,7 @@ pub fn build_ui(app: &adw::Application) {
             &selected_kernel_branch2,
             &db_load_complete,
             &window,
-            &window_banner
+            &window_banner,
         ),
         Some("content_page"),
     );

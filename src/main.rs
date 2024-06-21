@@ -26,7 +26,7 @@ struct KernelBranch {
     name: String,
     db_url: String,
     db: String,
-    init_script: String
+    init_script: String,
 }
 
 fn main() -> glib::ExitCode {
