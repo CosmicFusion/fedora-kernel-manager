@@ -382,7 +382,10 @@ fn get_kernel_branches() -> Vec<KernelBranch> {
             };
             println!("Download Complete!");
             println!("Running {} init script.", &branch.name);
-            let _ = cmd!(&branch.init_script).run();
+            match cmd!("bash", "-c", &branch.init_script).run() {
+                Ok(t) => println!("{} init script successful.", &branch.name),
+                _ => println!("{} init script failed.", &branch.name),
+            };
             kernel_branches_array.push(branch)
         }
     };
