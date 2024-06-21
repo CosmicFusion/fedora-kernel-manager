@@ -45,7 +45,7 @@ pub fn content(
         .hexpand(true)
         .valign(Align::Start)
         .halign(Align::Center)
-        .label("Downloading Database...")
+        .label(t!("loading_label_label"))
         .build();
 
     let loading_box = gtk::Box::builder()
@@ -85,7 +85,7 @@ pub fn content(
         .build();
 
     let kernel_branch_expander_row = adw::ExpanderRow::builder()
-        .subtitle("Kernel Branch")
+        .subtitle(t!("kernel_branch_expander_row_subtitle"))
         .build();
 
     kernel_branch_expander_row.add_row(&kernel_branch_expandable(
@@ -124,7 +124,7 @@ pub fn content(
         .margin_end(10)
         .height_request(50)
         .width_request(50)
-        .tooltip_text("Browse Kernel for select branch")
+        .tooltip_text(t!("browse_kernels_button_tooltip_text"))
         .hexpand(true)
         .build();
     browse_kernels_button.add_css_class("circular");
@@ -146,7 +146,7 @@ pub fn content(
         .margin_end(10)
         .height_request(50)
         .width_request(50)
-        .tooltip_text("Configure Sched_EXT settings")
+        .tooltip_text(t!("config_kernel_button_tooltip_text"))
         .sensitive(is_scx_kernel())
         .hexpand(true)
         .build();
@@ -154,7 +154,7 @@ pub fn content(
 
     if !is_scx_kernel() {
         config_kernel_button
-            .set_tooltip_text(Some("Currently running kernel doesn't support Sched-EXT"));
+            .set_tooltip_text(Some(&t!("config_kernel_button_tooltip_text_no_scx").to_string()));
     }
 
     config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window => move |_| {
@@ -225,7 +225,7 @@ fn kernel_branch_expandable(
     branch_container.add_css_class("boxed-list");
 
     let null_checkbutton = gtk::CheckButton::builder()
-        .label("No branch selected")
+        .label(t!("null_checkbutton_label"))
         .build();
 
     let get_kernel_branches_loop_context = MainContext::default();
@@ -268,11 +268,11 @@ fn kernel_branch_expandable(
         };
 
                 *db_load_complete.borrow_mut() = true;
-                println!("DB load complete!")
+                println!("{}", t!("db_load_complete"))
     }
                 }
                 _ => {
-                    window_banner.set_title("Kernel Database URL Error: Please Restart!");
+                    window_banner.set_title(t!("banner_text_url_error"));
                     window_banner.set_revealed(true);
                     loading_box.set_visible(false);
                 }
@@ -387,7 +387,7 @@ fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
                 .to_owned()
                 .unwrap()
                 .to_string();
-            println!("Downloading & Parsing package DB for {}.", &branch_name);
+            println!("{} {}.",t!("db_downloading"), &branch_name);
             let branch_db =
                 reqwest::blocking::get(branch["db_url"].as_str().to_owned().unwrap().to_string())?
                     .text()
@@ -398,11 +398,11 @@ fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
                 init_script: branch_init_script,
                 db: branch_db,
             };
-            println!("Download Complete!");
-            println!("Running {} init script.", &branch.name);
+            println!("{}", t!("db_download_complete"));
+            println!("{} {} {}", t!("db_init_script_run_p1"), &branch.name, t!("db_init_script_run_p2"));
             match cmd!("bash", "-c", &branch.init_script).run() {
-                Ok(t) => println!("{} init script successful.", &branch.name),
-                _ => println!("{} init script failed.", &branch.name),
+                Ok(t) => println!("{} {}", &branch.name, t!("db_init_script_successful")),
+                _ => println!("{} {}", &branch.name, t!("db_init_script_failed")),
             };
             kernel_branches_array.push(branch)
         }
@@ -417,7 +417,7 @@ pub fn get_running_kernel_info() -> RunningKernelInfo {
         .output()
     {
         Ok(t) => String::from_utf8(t.stdout).unwrap().trim().to_owned(),
-        Err(_) => "Unknown".to_string(),
+        Err(_) => t!("unknown").to_string(),
     };
 
     let version = match linux_version::linux_kernel_version() {
@@ -428,7 +428,7 @@ pub fn get_running_kernel_info() -> RunningKernelInfo {
                 format!("{}.{}.{}", t.major, t.minor, t.patch)
             }
         }
-        Err(_) => "Unknown".to_string(),
+        Err(_) => t!("unknown").to_string(),
     };
 
     let info = RunningKernelInfo {
@@ -450,7 +450,7 @@ fn is_scx_kernel() -> bool {
 }
 pub fn get_current_scheduler(version: String) -> String {
     if is_scx_kernel() {
-        println!("sched_ext is detected, getting scx scheduler");
+        println!("{}", t!("get_current_scheduler_sched_ext_detected"));
         let scx_sched = match fs::read_to_string("/sys/kernel/sched_ext/root/ops") {
             Ok(t) => t,
             Err(_) => "disabled".to_string(),
@@ -509,7 +509,7 @@ fn create_kernel_badges(
     }
 
     badge_box.append(&create_kernel_badge(
-        "Kernel Branch",
+        &t!("kernel_badge_branch_label").to_string(),
         &selected_kernel_branch_clone.name,
         "background-accent-bg",
         &kernel_badges_size_group,

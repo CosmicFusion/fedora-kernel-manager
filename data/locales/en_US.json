@@ -1,3 +1,24 @@
 {
-  "hello": "Wassup!"
+  "application_name": "Fedora Kernel Manager",
+  "developer_name": "Cosmo",
+  "banner_text_no_internet": "Warning: No internet connection",
+  "banner_text_url_error": "Kernel Database URL Error: Please Restart!",
+  "loading_label_label": "Downloading Database...",
+  "kernel_branch_expander_row_subtitle": "Kernel Branch",
+  "browse_kernels_button_tooltip_text": "Browse Kernel for select branch",
+  "config_kernel_button_tooltip_text": "Configure Sched_EXT settings",
+  "config_kernel_button_tooltip_text_no_scx": "Currently running kernel doesn't support Sched-EXT",
+  "null_checkbutton_label": "No branch selected",
+  "db_load_complete": "DB load complete!",
+  "db_downloading": "Downloading & Parsing package DB for",
+  "db_download_complete": "Download Complete!",
+  "db_init_script_run_p1": "Running",
+  "db_init_script_run_p2": "init script.",
+  "db_init_script_successful": "init script successful.",
+  "db_init_script_failed": "init script failed!",
+  "unknown": "Unknown",
+  "disabled": "Disabled",
+  "get_current_scheduler_sched_ext_detected": "sched_ext is detected, getting scx scheduler",
+  "kernel_badge_branch_label": "Kernel Branch",
+  "kernel_badge_branch_label": "Latest Version"
 }

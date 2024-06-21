@@ -15,8 +15,8 @@ use std::rc::Rc;
 use std::{thread, time};
 
 pub fn build_ui(app: &adw::Application) {
-    gtk::glib::set_prgname(Some("Fedora Kernel Manager"));
-    glib::set_application_name("Fedora Kernel Manager");
+    gtk::glib::set_prgname(Some(t!("application_name").to_string()));
+    glib::set_application_name(&t!("application_name").to_string());
 
     let internet_connected = Rc::new(RefCell::new(false));
     let selected_kernel_branch: Rc<RefCell<KernelBranch>> = Rc::new(RefCell::new(KernelBranch {
@@ -52,7 +52,7 @@ pub fn build_ui(app: &adw::Application) {
     // The main loop executes the asynchronous block
     internet_loop_context.spawn_local(clone!(@weak window_banner => async move {
         while let Ok(state) = internet_loop_receiver.recv().await {
-            let banner_text = "Warning: No internet connection";
+            let banner_text = t!("banner_text_no_internet").to_string();
             if state == true {
                 *internet_connected_status.borrow_mut()=true;
                 if window_banner.title() == banner_text {
@@ -60,8 +60,8 @@ pub fn build_ui(app: &adw::Application) {
                 }
             } else {
                 *internet_connected_status.borrow_mut()=false;
-                if window_banner.title() != "Kernel Database URL Error: Please Restart!" {
-                window_banner.set_title(banner_text);
+                if window_banner.title() != t!("banner_text_url_error").to_string() {
+                window_banner.set_title(&banner_text);
                 window_banner.set_revealed(true)
                     }
             }
@@ -71,7 +71,7 @@ pub fn build_ui(app: &adw::Application) {
     let window_headerbar = adw::HeaderBar::builder()
         .title_widget(
             &adw::WindowTitle::builder()
-                .title("Fedora Kernel Manager")
+                .title(t!("application_name"))
                 .build(),
         )
         .build();
@@ -121,11 +121,12 @@ pub fn build_ui(app: &adw::Application) {
 
     let credits_window = adw::AboutWindow::builder()
         .application_icon(APP_ICON)
-        .application_name("Fedora Kernel Manager")
+        .application_name(t!("application_name"))
         .transient_for(&window)
         .version(VERSION)
         .hide_on_close(true)
-        .developer_name("Cosmo")
+        .developer_name(t!("developer_name"))
+        .license_type(License::Gpl20)
         .issue_url(APP_GITHUB.to_owned() + "/issues")
         .build();
 
