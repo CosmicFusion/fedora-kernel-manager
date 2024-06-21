@@ -139,13 +139,26 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
             Ok(_) => {
                 cmd_status_dialog.set_heading(Some("Success!"));
                 cmd_status_dialog.set_body(format!("SCX has been set to: {}", &selected_scx_sched_clone1).as_str());
-                cmd_status_dialog.present()
-
+                cmd_status_dialog.present();
+                create_current_sched_badge(
+                    &badge_box,
+                    &get_running_kernel_info(),
+                    &kernel_badges_size_group,
+                    &kernel_badges_size_group0,
+                    &kernel_badges_size_group1,
+                );
             }
             Err(_) => {
                 cmd_status_dialog.set_heading(Some("Failed!"));
                 cmd_status_dialog.set_body(format!("SCX couldn't be has been set to: {}", &selected_scx_sched_clone1).as_str());
-                cmd_status_dialog.present()
+                cmd_status_dialog.present();
+                create_current_sched_badge(
+                    &badge_box,
+                    &get_running_kernel_info(),
+                    &kernel_badges_size_group,
+                    &kernel_badges_size_group0,
+                    &kernel_badges_size_group1,
+                );
             }
         };
     }));

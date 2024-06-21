@@ -217,10 +217,14 @@ fn add_package_rows(
             let kernel_status_icon = gtk::Image::builder()
                 .icon_name("emblem-default")
                 .pixel_size(24)
+                .valign(Align::Center)
                 .visible(false)
                 .tooltip_text("Installed")
                 .build();
-            let kernel_description_label = gtk::Label::builder().label(&kernel_description).build();
+            let kernel_description_label = gtk::Label::builder()
+                .label(&kernel_description)
+                .valign(Align::Center)
+                .build();
             let kernel_content_row = adw::ActionRow::builder().build();
             let kernel_install_button = gtk::Button::builder()
                 .margin_start(5)

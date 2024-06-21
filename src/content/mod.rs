@@ -23,8 +23,6 @@ pub fn content(
     window: &adw::ApplicationWindow,
     window_banner: &adw::Banner,
 ) -> gtk::Box {
-    let running_kernel_info = get_running_kernel_info();
-
     let (get_kernel_branches_sender, get_kernel_branches_receiver) = async_channel::unbounded();
     let get_kernel_branches_sender = get_kernel_branches_sender.clone();
 
@@ -194,7 +192,7 @@ pub fn content(
     load_badge_async_context.spawn_local(clone!(@weak content_box, @weak loading_box, @weak kernel_badge_box, @strong selected_kernel_branch, @strong db_load_complete => async move {
             while let Ok(_state) = load_badge_async_receiver.recv().await {
             if *db_load_complete.borrow() == true {
-                create_kernel_badges(&kernel_badge_box, &running_kernel_info, &selected_kernel_branch);
+                create_kernel_badges(&kernel_badge_box, &get_running_kernel_info(), &selected_kernel_branch);
                 loading_box.set_visible(false);
                 content_box.set_sensitive(true)
             }
@@ -331,6 +329,8 @@ pub fn create_kernel_badge(
         .margin_end(5)
         .margin_bottom(1)
         .margin_top(1)
+        .valign(Align::Center)
+        .halign(Align::Center)
         .hexpand(true)
         .vexpand(true)
         .build();
@@ -344,6 +344,8 @@ pub fn create_kernel_badge(
         .margin_end(0)
         .margin_bottom(1)
         .margin_top(1)
+        .valign(Align::Center)
+        .halign(Align::Center)
         .hexpand(true)
         .vexpand(true)
         .build();
