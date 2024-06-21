@@ -12,6 +12,7 @@ install_no_build:
 	mkdir -p $(DESTDIR)/usr/lib/fedora-kernel-manager/
 	cp -rvf data/scripts $(DESTDIR)/usr/lib/fedora-kernel-manager/
 	chmod 755 $(DESTDIR)/usr/lib/fedora-kernel-manager/scripts/*.sh
+	cp -rvf data/locales $(DESTDIR)/usr/lib/fedora-kernel-manager/
 	cp -vf data/kernel_branches.json $(DESTDIR)/usr/lib/fedora-kernel-manager/
 	cp -vf data/scx_scheds.json $(DESTDIR)/usr/lib/fedora-kernel-manager/
 	mkdir -p $(DESTDIR)/usr/share/applications
