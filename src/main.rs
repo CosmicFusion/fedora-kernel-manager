@@ -8,7 +8,6 @@ use std::fs;
 use rust_i18n::Backend;
 use std::collections::HashMap;
 use std::env;
-use std::fmt::format;
 use adw::prelude::*;
 use gtk::{gio,gdk,CssProvider};
 
@@ -61,6 +60,7 @@ struct RunningKernelInfo {
     sched: String,
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 struct KernelBranch {
     name: String,

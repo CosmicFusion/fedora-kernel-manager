@@ -1,14 +1,9 @@
 use crate::content::get_running_kernel_info;
-use crate::{KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
 use duct::cmd;
 use glib::*;
-use gtk::prelude::*;
-use gtk::AccessibleRole::Command;
 use gtk::*;
 use std::cell::RefCell;
-use std::fs::*;
-use std::process::Stdio;
 use std::rc::Rc;
 use std::time::Duration;
 use std::{fs, io, thread};
@@ -19,10 +14,6 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
         .vexpand(true)
         .orientation(Orientation::Vertical)
         .build();
-
-    let kernel_badges_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
-    let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
-    let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
 
     let main_icon = gtk::Image::builder()
         .pixel_size(128)

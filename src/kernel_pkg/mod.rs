@@ -1,14 +1,10 @@
-use crate::content::get_running_kernel_info;
-use crate::{kernel_package_row, KernelBranch, RunningKernelInfo};
+use crate::{kernel_package_row, KernelBranch};
 use adw::prelude::*;
 use duct::cmd;
 use glib::*;
-use gtk::prelude::*;
 use gtk::*;
 use std::cell::RefCell;
 use std::error::Error;
-use std::fs;
-use std::fs::*;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::process::Command;

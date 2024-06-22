@@ -1,11 +1,8 @@
 use crate::{kernel_pkg, sched_ext, KernelBranch, RunningKernelInfo};
 use adw::prelude::*;
-use adw::ExpanderRow;
 use async_channel::Receiver;
 use duct::cmd;
-use glib::property::PropertyGet;
 use glib::*;
-use gtk::prelude::*;
 use gtk::*;
 use homedir::get_my_home;
 use std::cell::RefCell;
@@ -408,7 +405,7 @@ fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
             println!("{}", t!("db_download_complete"));
             println!("{} {} {}", t!("db_init_script_run_p1"), &branch.name, t!("db_init_script_run_p2"));
             match cmd!("bash", "-c", &branch.init_script).run() {
-                Ok(t) => println!("{} {}", &branch.name, t!("db_init_script_successful")),
+                Ok(_) => println!("{} {}", &branch.name, t!("db_init_script_successful")),
                 _ => println!("{} {}", &branch.name, t!("db_init_script_failed")),
             };
             kernel_branches_array.push(branch)
