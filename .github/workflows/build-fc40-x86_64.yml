@@ -26,4 +26,4 @@ jobs:
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Binary RPM
-        path: packages/x86_64/*.rpm
+        path: packages/x86_64/
