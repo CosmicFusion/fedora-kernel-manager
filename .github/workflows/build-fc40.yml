@@ -13,11 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get RPM Spec BuildDepends
-      run: dnf builddep fedora-kernel-manager.spec"
+    - name: Get RPM Spec BuildRequires
+      run: dnf builddep fedora-kernel-manager.spec
 
     - name: Build RPM package
-      run: rpmbuild -bb fedora-kernel-manager.spec --define "_rpmdir $(pwd)/packages
+      run: rpmbuild -bb fedora-kernel-manager.spec --define "_rpmdir $(pwd)/packages"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
