@@ -10,7 +10,7 @@ Summary:       A Libadwaita rust based application for managing and installing k
 
 
 URL:            https://github.com/CosmicFusion/fedora-kernel-manager
-Source0:        %{URL}/archive/refs/tags/%{pkg_release}.tar.gz
+Source0:        %{URL}/releases/download/%{pkg_release}/fedora-kernel-manager.tar.gz
 
 BuildRequires:	wget
 BuildRequires:	cargo
