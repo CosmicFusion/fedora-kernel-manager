@@ -13,11 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Setup RPM Source
+      run: mkdir -p ./SOURCES && tar -pczf ./SOURCES/fedora-kernel-manager.tar.gz . --exclude="./SOURCES/fedora-kernel-manager.tar.gz"
+
     - name: Get RPM Spec BuildRequires
       run: dnf install wget cpio mock tar pykickstart fedpkg libvirt fedora-packager rpmdevtools 'dnf-command(builddep)' -y && dnf builddep fedora-kernel-manager.spec -y
-
-    - name: Setup RPM Source
-      run: mkdir -p ./SOURCES && tar -czf ./SOURCES/fedora-kernel-manager.tar.gz . --exclude=./SOURCES/fedora-kernel-manager.tar.gz
 
     - name: Build RPM package
       run: rpmbuild -bb fedora-kernel-manager.spec --define "_rpmdir $(pwd)/packages" --define "_topdir $(pwd)/"
