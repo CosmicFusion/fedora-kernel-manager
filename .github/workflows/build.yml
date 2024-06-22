@@ -1,9 +1,9 @@
-name: RPM Build (Fedora 40)
+name: RPM Build
 on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: fedora:latest
+    runs-on: ubuntu:latest
     steps:
       - uses: actions/checkout@v2
 
