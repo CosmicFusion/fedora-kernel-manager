@@ -3,18 +3,19 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: ubuntu:latest
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: build RPM package
-        id: rpm
-        uses: naveenrajm7/rpmbuild@master
-        with:
-          spec_file: "fedora-kernel-manager.spec"
+    - name: build RPM package
+      id: rpm
+      uses: naveenrajm7/rpmbuild@master
+      with:
+        spec_file: "cello.spec"
+        additional_repos: "['centos-release-scl', 'http://www.percona.com/downloads/percona-release/redhat/0.1-3/percona-release-0.1-3.noarch.rpm']"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v1.0.0
-        with:
-          name: Binary RPM
-          path: ${{ steps.rpm.outputs.rpm_dir_path }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: Binary RPM
+        path: ${{ steps.rpm.outputs.rpm_dir_path }}
