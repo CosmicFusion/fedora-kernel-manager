@@ -149,14 +149,18 @@ pub fn content(
         .height_request(50)
         .width_request(50)
         .tooltip_text(t!("config_kernel_button_tooltip_text"))
-        .sensitive(is_scx_kernel())
         .hexpand(true)
         .build();
     config_kernel_button.add_css_class("circular");
 
     if !is_scx_kernel() {
+        config_kernel_button.set_sensitive(false);
         config_kernel_button
             .set_tooltip_text(Some(&t!("config_kernel_button_tooltip_text_no_scx").to_string()));
+    } else if is_scx_kernel() && !is_scx_installed() {
+        config_kernel_button.set_sensitive(false);
+        config_kernel_button
+            .set_tooltip_text(Some(&t!("config_kernel_button_tooltip_text_no_scx_installed").to_string()));
     }
 
     config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window, @weak sched_ext_badge_box => move |_| {
@@ -587,4 +591,13 @@ fn create_current_sched_badge(
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,
     )));
+}
+
+fn is_scx_installed() -> bool {
+    match Command::new("rpm")
+        .args(["-q", "sched-ext-scx"])
+        .output() {
+        Ok(t) if t.status.success() => true,
+        _ => false
+    }
 }

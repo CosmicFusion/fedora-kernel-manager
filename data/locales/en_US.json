@@ -8,6 +8,7 @@
   "browse_kernels_button_tooltip_text": "Browse Kernel for select branch",
   "config_kernel_button_tooltip_text": "Configure Sched_EXT settings",
   "config_kernel_button_tooltip_text_no_scx": "Currently running kernel doesn't support Sched-EXT",
+  "config_kernel_button_tooltip_text_no_scx_installed": "Your kernel supports Sched-EXT but the sched-ext-scx packages is not installed!\nInstall it, reboot, try again",
   "null_checkbutton_label": "No branch selected",
   "db_load_complete": "DB load complete!",
   "db_downloading": "Downloading & Parsing package DB for",

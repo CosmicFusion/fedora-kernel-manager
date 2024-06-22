@@ -30,6 +30,8 @@ Requires: 	polkit
 Requires:   iputils
 Requires:   fedora-kernel-manager-cachyos-config
 
+Recommends: sched-ext-scx
+
 %description
 A Libadwaita rust based application for managing and installing kernels.
 
@@ -42,8 +44,8 @@ Config files to enable coprs/bieszczaders/kernel-cachyos in fedora-kernel-manage
 
 %files cachyos-config
 %{_prefix}/lib/fedora-kernel-manager/kernel_branches/kernel-cachyos.json
-%{_datadir}/polkit-1/actions/fdm.kernel.cachyos.init.policy
-%{_datadir}/polkit-1/rules.d/99-fdm.kernel.cachyos.init.rules
+%{_datadir}/polkit-1/actions/fkm.kernel.cachyos.init.policy
+%{_datadir}/polkit-1/rules.d/99-fkm.kernel.cachyos.init.rules
 
 %prep
 %autosetup -p1 -n nobara-drivers-gtk4
@@ -56,5 +58,5 @@ DESTDIR=%{buildroot} make install
 %{_bindir}/*
 %{_datadir}/applications/*
 %{_datadir}/icons/hicolor/scalable/apps/*.svg
-%{_datadir}/polkit-1/actions/fdm.change.scx.policy
-%{_datadir}/polkit-1/actions/fdm.modify.package.policy
+%{_datadir}/polkit-1/actions/fkm.change.scx.policy
+%{_datadir}/polkit-1/actions/fkm.modify.package.policy

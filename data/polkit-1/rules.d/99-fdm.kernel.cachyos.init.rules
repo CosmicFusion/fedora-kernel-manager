@@ -1,6 +1,0 @@
-/* Allow passwordless auth for fdm.kernel.cachyos.init
-polkit.addRule(function(action, subject) {
-    if (action.id == "fdm.kernel.cachyos.init" {
-        return polkit.Result.YES;
-    }
-});
