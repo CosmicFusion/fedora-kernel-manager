@@ -1,4 +1,4 @@
-name: RPM Build (Fedora 40)
+name: RPM Build (Fedora 40 - x86-64)
 on: workflow_dispatch
 
 jobs:
@@ -16,20 +16,14 @@ jobs:
     - name: Setup RPM Source
       run: mkdir -p ./SOURCES && tar -pczf ./SOURCES/fedora-kernel-manager.tar.gz  --exclude="../$(basename "$PWD")/SOURCES/fedora-kernel-manager.tar.gz" ../$(basename "$PWD")
 
-    - name: Debuuuuuuug0
-      run: dnf install tree -y
-
     - name: Get RPM Spec BuildRequires
       run: dnf install wget cpio mock tar pykickstart fedpkg libvirt fedora-packager rpmdevtools 'dnf-command(builddep)' -y && dnf builddep fedora-kernel-manager.spec -y
 
     - name: Build RPM package
       run: rpmbuild -bb fedora-kernel-manager.spec --define "_rpmdir $(pwd)/packages" --define "_topdir $(pwd)/"
 
-    - name: Debuuuuuuug1
-      run: rm -rf ./target && tree
-
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
       with:
         name: Binary RPM
-        path: packages/*.rpm
+        path: packages/x86_64/*.rpm
