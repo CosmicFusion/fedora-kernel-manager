@@ -17,7 +17,7 @@ jobs:
       run: dnf install wget cpio mock pykickstart fedpkg libvirt fedora-packager rpmdevtools 'dnf-command(builddep)' -y && dnf builddep fedora-kernel-manager.spec -y
 
     - name: Build RPM package
-      run: rpmbuild -bb fedora-kernel-manager.spec --define "_rpmdir $(pwd)/packages"
+      run: rpmbuild -bb fedora-kernel-manager.spec --define "_rpmdir $(pwd)/packages" --undefine=_disable_source_fetch
 
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
