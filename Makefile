@@ -19,6 +19,7 @@ install_no_build:
 	mkdir -p $(DESTDIR)/usr/share/icons/hicolor/scalable/apps
 	cp -vf data/com.github.cosmicfusion.fedora-kernel-manager.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/
 	cp -vf data/com.github.cosmicfusion.fedora-kernel-manager.desktop  $(DESTDIR)/usr/share/applications/
+	cp -vf data/polkit-1 $(DESTDIR)/usr/share/
 
 install:
 	mkdir -p $(DESTDIR)/usr/bin/
@@ -35,3 +36,4 @@ install:
 	mkdir -p $(DESTDIR)/usr/share/icons/hicolor/scalable/apps
 	cp -vf data/com.github.cosmicfusion.fedora-kernel-manager.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/
 	cp -vf data/com.github.cosmicfusion.fedora-kernel-manager.desktop  $(DESTDIR)/usr/share/applications/
+	cp -vf data/polkit-1 $(DESTDIR)/usr/share/
