@@ -13,11 +13,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Setup RPM Source
+      run: tar -czf ./SOURCES/fedora-kernel-manager.tar.gz . --exclude=./SOURCES/fedora-kernel-manager.tar.gz
+
     - name: Get RPM Spec BuildRequires
-      run: dnf install wget cpio mock pykickstart fedpkg libvirt fedora-packager rpmdevtools 'dnf-command(builddep)' -y && dnf builddep fedora-kernel-manager.spec -y
+      run: dnf install wget cpio mock tar pykickstart fedpkg libvirt fedora-packager rpmdevtools 'dnf-command(builddep)' -y && dnf builddep fedora-kernel-manager.spec -y
 
     - name: Build RPM package
-      run: rpmbuild -bb fedora-kernel-manager.spec --define "_rpmdir $(pwd)/packages" --define "_topdir $(pwd)/" --undefine=_disable_source_fetch
+      run: rpmbuild -bb fedora-kernel-manager.spec --define "_rpmdir $(pwd)/packages" --define "_topdir $(pwd)/"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
