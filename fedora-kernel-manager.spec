@@ -48,7 +48,7 @@ Config files to enable coprs/bieszczaders/kernel-cachyos in fedora-kernel-manage
 %{_datadir}/polkit-1/rules.d/99-fkm.kernel.cachyos.init.rules
 
 %prep
-%autosetup -p1 -n nobara-drivers-gtk4
+%autosetup -p1 -n fedora-kernel-manager
 
 %build
 DESTDIR=%{buildroot} make install
