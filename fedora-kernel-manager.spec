@@ -3,7 +3,7 @@
 
 Name:          fedora-kernel-manager
 Version:       %{pkg_release}
-Release:       2%{?dist}
+Release:       3%{?dist}
 License:       GPLv2
 Group:         System Environment/Libraries
 Summary:       A Libadwaita rust based application for managing and installing kernels.
