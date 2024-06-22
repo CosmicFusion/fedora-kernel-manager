@@ -149,7 +149,7 @@ pub fn content(
         .height_request(50)
         .width_request(50)
         .tooltip_text(t!("config_kernel_button_tooltip_text"))
-        .sensitive(!is_scx_kernel())
+        .sensitive(is_scx_kernel())
         .hexpand(true)
         .build();
     config_kernel_button.add_css_class("circular");
@@ -379,37 +379,36 @@ pub fn create_kernel_badge(
 
 fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
     let mut kernel_branches_array: Vec<KernelBranch> = Vec::new();
-    let data = fs::read_to_string("/usr/lib/fedora-kernel-manager/kernel_branches.json")
-        .expect("Unable to read file");
-    let res: serde_json::Value = serde_json::from_str(&data).expect("Unable to parse");
-    if let serde_json::Value::Array(branches) = &res["branches"] {
-        for branch in branches {
-            let branch_name = branch["name"].as_str().to_owned().unwrap().to_string();
-            let branch_db_url = branch["db_url"].as_str().to_owned().unwrap().to_string();
-            let branch_init_script = branch["init_script"]
-                .as_str()
-                .to_owned()
-                .unwrap()
-                .to_string();
-            println!("{} {}.",t!("db_downloading"), &branch_name);
-            let branch_db =
-                reqwest::blocking::get(branch["db_url"].as_str().to_owned().unwrap().to_string())?
-                    .text()
-                    .unwrap();
-            let branch = KernelBranch {
-                name: branch_name,
-                db_url: branch_db_url,
-                init_script: branch_init_script,
-                db: branch_db,
-            };
-            println!("{}", t!("db_download_complete"));
-            println!("{} {} {}", t!("db_init_script_run_p1"), &branch.name, t!("db_init_script_run_p2"));
-            match cmd!("bash", "-c", &branch.init_script).run() {
-                Ok(_) => println!("{} {}", &branch.name, t!("db_init_script_successful")),
-                _ => println!("{} {}", &branch.name, t!("db_init_script_failed")),
-            };
-            kernel_branches_array.push(branch)
-        }
+    let kernel_branch_files_dir = fs::read_dir("/usr/lib/fedora-kernel-manager/kernel_branches").expect("No Kernel json files found");
+    for kernel_branch_file in kernel_branch_files_dir {
+        let kernel_branch_file_path = kernel_branch_file.expect("couldn't change dir entry to path").path();
+        let kernel_branch_data = fs::read_to_string(kernel_branch_file_path).expect("some json is invalid");
+        let branch: serde_json::Value = serde_json::from_str(&kernel_branch_data).expect("some json is invalid");
+        let branch_name = branch["name"].as_str().to_owned().unwrap().to_string();
+        let branch_db_url = branch["db_url"].as_str().to_owned().unwrap().to_string();
+        let branch_init_script = branch["init_script"]
+            .as_str()
+            .to_owned()
+            .unwrap()
+            .to_string();
+        println!("{} {}.",t!("db_downloading"), &branch_name);
+        let branch_db =
+            reqwest::blocking::get(branch["db_url"].as_str().to_owned().unwrap().to_string())?
+                .text()
+                .unwrap();
+        let branch = KernelBranch {
+            name: branch_name,
+            db_url: branch_db_url,
+            init_script: branch_init_script,
+            db: branch_db,
+        };
+        println!("{}", t!("db_download_complete"));
+        println!("{} {} {}", t!("db_init_script_run_p1"), &branch.name, t!("db_init_script_run_p2"));
+        match cmd!("bash", "-c", &branch.init_script).run() {
+            Ok(_) => println!("{} {}", &branch.name, t!("db_init_script_successful")),
+            _ => println!("{} {}", &branch.name, t!("db_init_script_failed")),
+        };
+        kernel_branches_array.push(branch)
     };
 
     Ok(kernel_branches_array)
