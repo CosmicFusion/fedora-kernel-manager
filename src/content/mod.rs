@@ -84,6 +84,11 @@ pub fn content(
         .orientation(Orientation::Vertical)
         .build();
 
+    let sched_ext_badge_box = adw::Bin::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .build();
+
     let kernel_branch_expander_row = adw::ExpanderRow::builder()
         .subtitle(t!("kernel_branch_expander_row_subtitle"))
         .build();
@@ -147,7 +152,7 @@ pub fn content(
         .height_request(50)
         .width_request(50)
         .tooltip_text(t!("config_kernel_button_tooltip_text"))
-        .sensitive(is_scx_kernel())
+        .sensitive(!is_scx_kernel())
         .hexpand(true)
         .build();
     config_kernel_button.add_css_class("circular");
@@ -157,9 +162,9 @@ pub fn content(
             .set_tooltip_text(Some(&t!("config_kernel_button_tooltip_text_no_scx").to_string()));
     }
 
-    config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window => move |_| {
+    config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window, @weak sched_ext_badge_box => move |_| {
             content_stack.add_named(
-        &sched_ext::sched_ext_page(&content_stack, &window),
+        &sched_ext::sched_ext_page(&content_stack, &window, &sched_ext_badge_box),
         Some("sched_ext_page"),
     );
         content_stack.set_visible_child_name("sched_ext_page")
@@ -192,7 +197,9 @@ pub fn content(
     load_badge_async_context.spawn_local(clone!(@weak content_box, @weak loading_box, @weak kernel_badge_box, @strong selected_kernel_branch, @strong db_load_complete => async move {
             while let Ok(_state) = load_badge_async_receiver.recv().await {
             if *db_load_complete.borrow() == true {
-                create_kernel_badges(&kernel_badge_box, &get_running_kernel_info(), &selected_kernel_branch);
+                let running_kernel_info = get_running_kernel_info();
+                create_kernel_badges(&kernel_badge_box, &running_kernel_info, &selected_kernel_branch);
+                create_current_sched_badge(&sched_ext_badge_box, &running_kernel_info);
                 loading_box.set_visible(false);
                 content_box.set_sensitive(true)
             }
@@ -562,4 +569,26 @@ fn save_branch_config(branch: &str) {
             fs::write(config_path.join("branch"), branch).unwrap();
         }
     }
+}
+
+fn create_current_sched_badge(
+    badge_box: &adw::Bin,
+    running_kernel_info: &RunningKernelInfo,
+) {
+    //while let Some(widget) = badge_box.last_child() {
+    //    badge_box.remove(&widget);
+    //}
+
+    let kernel_badges_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
+    let kernel_badges_size_group0 = gtk::SizeGroup::new(SizeGroupMode::Both);
+    let kernel_badges_size_group1 = gtk::SizeGroup::new(SizeGroupMode::Both);
+
+    badge_box.set_child(Some(&crate::content::create_kernel_badge(
+        &t!("kernel_badge_running_sched_label").to_string(),
+        &running_kernel_info.sched,
+        "background-accent-bg",
+        &kernel_badges_size_group,
+        &kernel_badges_size_group0,
+        &kernel_badges_size_group1,
+    )));
 }

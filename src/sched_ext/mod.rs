@@ -13,7 +13,7 @@ use std::rc::Rc;
 use std::time::Duration;
 use std::{fs, io, thread};
 
-pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindow) -> gtk::Box {
+pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindow, badge_box: &adw::Bin) -> gtk::Box {
     let main_box = gtk::Box::builder()
         .hexpand(true)
         .vexpand(true)
@@ -48,21 +48,7 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
         .build();
     main_label.add_css_class("symbolic-accent-bg");
 
-    let badge_box = gtk::Box::builder()
-        .hexpand(true)
-        .valign(Align::Start)
-        .orientation(Orientation::Vertical)
-        .build();
-
     let initial_running_kernel_info = get_running_kernel_info();
-
-    create_current_sched_badge(
-        &badge_box,
-        &initial_running_kernel_info,
-        &kernel_badges_size_group,
-        &kernel_badges_size_group0,
-        &kernel_badges_size_group1,
-    );
 
     let selected_scx_sched = Rc::new(RefCell::new(initial_running_kernel_info.clone().sched));
 
@@ -128,37 +114,18 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
     apply_button.add_css_class("pill");
     apply_button.add_css_class("destructive-action");
 
-    apply_button.connect_clicked(clone! (@weak badge_box, @weak kernel_badges_size_group, @weak kernel_badges_size_group0, @weak kernel_badges_size_group1, @weak selected_scx_sched => move |_| {
+    apply_button.connect_clicked(clone! (@weak selected_scx_sched => move |_| {
         let selected_scx_sched_clone1 = selected_scx_sched.borrow().clone();
-
-        match change_scx_scheduler(&selected_scx_sched_clone1,
-                                   &badge_box,
-                                   &kernel_badges_size_group,
-                                   &kernel_badges_size_group0,
-                                   &kernel_badges_size_group1,) {
+        match change_scx_scheduler(&selected_scx_sched_clone1) {
             Ok(_) => {
                 cmd_status_dialog.set_heading(Some(&t!("sched_ext_cmd_status_dialog_heading_success").to_string()));
                 cmd_status_dialog.set_body(format!("{}: {}", t!("sched_ext_cmd_status_dialog_body_success"), &selected_scx_sched_clone1).as_str());
                 cmd_status_dialog.present();
-                create_current_sched_badge(
-                    &badge_box,
-                    &get_running_kernel_info(),
-                    &kernel_badges_size_group,
-                    &kernel_badges_size_group0,
-                    &kernel_badges_size_group1,
-                );
             }
             Err(_) => {
                 cmd_status_dialog.set_heading(Some(&t!("sched_ext_cmd_status_dialog_heading_failed").to_string()));
                 cmd_status_dialog.set_body(format!("{}: {}", t!("sched_ext_cmd_status_dialog_body_failed"), &selected_scx_sched_clone1).as_str());
                 cmd_status_dialog.present();
-                create_current_sched_badge(
-                    &badge_box,
-                    &get_running_kernel_info(),
-                    &kernel_badges_size_group,
-                    &kernel_badges_size_group0,
-                    &kernel_badges_size_group1,
-                );
             }
         };
     }));
@@ -188,34 +155,13 @@ pub fn sched_ext_page(content_stack: &gtk::Stack, window: &adw::ApplicationWindo
     window_bottombar.append(&back_button);
     window_bottombar.append(&apply_button);
 
-    main_box.append(&badge_box);
+    main_box.append(badge_box);
     main_box.append(&scx_sched_expander_row_boxedlist);
     main_box.append(&main_icon);
     main_box.append(&main_label);
     main_box.append(&window_bottombar);
 
     main_box
-}
-
-fn create_current_sched_badge(
-    badge_box: &gtk::Box,
-    running_kernel_info: &RunningKernelInfo,
-    kernel_badges_size_group: &gtk::SizeGroup,
-    kernel_badges_size_group0: &gtk::SizeGroup,
-    kernel_badges_size_group1: &gtk::SizeGroup,
-) {
-    while let Some(widget) = badge_box.last_child() {
-        badge_box.remove(&widget);
-    }
-
-    badge_box.append(&crate::content::create_kernel_badge(
-        &t!("kernel_badge_running_sched_label").to_string(),
-        &running_kernel_info.sched,
-        "background-accent-bg",
-        &kernel_badges_size_group,
-        &kernel_badges_size_group0,
-        &kernel_badges_size_group1,
-    ));
 }
 
 fn scx_sched_expandable(
@@ -317,10 +263,6 @@ fn get_current_scx_scheduler() -> String {
 
 fn change_scx_scheduler(
     scx_sched: &str,
-    badge_box: &gtk::Box,
-    kernel_badges_size_group: &gtk::SizeGroup,
-    kernel_badges_size_group0: &gtk::SizeGroup,
-    kernel_badges_size_group1: &gtk::SizeGroup,
 ) -> Result<(), io::Error> {
     cmd!(
         "pkexec",
@@ -332,12 +274,5 @@ fn change_scx_scheduler(
         )
     )
     .run()?;
-    create_current_sched_badge(
-        &badge_box,
-        &get_running_kernel_info(),
-        &kernel_badges_size_group,
-        &kernel_badges_size_group0,
-        &kernel_badges_size_group1,
-    );
     Ok(())
 }
