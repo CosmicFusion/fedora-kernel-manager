@@ -1,9 +1,15 @@
-name: RPM Build
+name: RPM Build (Fedora 40)
 on: workflow_dispatch
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: fedora:40
+      volumes:
+        - /proc:/proc
+      options: --privileged -it
+
     steps:
     - uses: actions/checkout@v2
 
@@ -12,7 +18,6 @@ jobs:
       uses: naveenrajm7/rpmbuild@master
       with:
         spec_file: "fedora-kernel-manager.spec"
-        additional_repos: "['centos-release-scl', 'http://www.percona.com/downloads/percona-release/redhat/0.1-3/percona-release-0.1-3.noarch.rpm']"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
