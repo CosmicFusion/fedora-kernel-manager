@@ -20,6 +20,7 @@ BuildRequires:	gtk3-devel
 BuildRequires:	libadwaita-devel
 BuildRequires:	openssl-devel
 BuildRequires:	llvm-devel
+BuildRequires:	clang-devel
 
 Requires:   /usr/bin/bash
 Requires:	gtk4
