@@ -71,10 +71,12 @@ struct KernelBranch {
 
 fn main() -> glib::ExitCode {
     let current_locale = match env::var_os("LANG") {
-        Some(v) => v.into_string().unwrap(),
+        Some(v) => v.into_string().unwrap().chars()
+            .take_while(|&ch| ch != '.')
+            .collect::<String>(),
         None => panic!("$LANG is not set"),
     };
-    rust_i18n::set_locale(current_locale.strip_suffix(".UTF-8").unwrap());
+    rust_i18n::set_locale(&current_locale);
 
     let app = adw::Application::builder().application_id(APP_ID).build();
 
