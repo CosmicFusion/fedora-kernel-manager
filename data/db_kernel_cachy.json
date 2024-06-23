@@ -10,7 +10,7 @@
     {
       "name": "CachyOS LTS Kernel",
       "main_package": "kernel-cachyos-lts",
-      "packages": "kernel-cachyos kernel-cachyos-devel-matched",
+      "packages": "kernel-cachyos-lts kernel-cachyos-lts-devel-matched",
       "min_x86_march": "2"
     },
     {
