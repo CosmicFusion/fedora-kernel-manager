@@ -252,18 +252,15 @@ fn get_current_scx_scheduler() -> String {
     scx_sched
 }
 
+const CHANGE_SCX_PROG: &str = r###"
+#! /bin/bash
+SCX_SCHED="$0"
+pkexec /usr/lib/fedora-kernel-manager/scripts/change_scx.sh "${SCX_SCHED}"
+"###;
+
 fn change_scx_scheduler(
     scx_sched: &str,
 ) -> Result<(), io::Error> {
-    cmd!(
-        "pkexec",
-        "bash",
-        "-c",
-        format!(
-            "/usr/lib/fedora-kernel-manager/scripts/change_scx.sh {}",
-            scx_sched
-        )
-    )
-    .run()?;
+    cmd!("bash", "-c", CHANGE_SCX_PROG, scx_sched).run()?;
     Ok(())
 }

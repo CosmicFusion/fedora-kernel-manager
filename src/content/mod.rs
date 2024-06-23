@@ -160,6 +160,9 @@ pub fn content(
             .set_tooltip_text(Some(&t!("config_kernel_button_tooltip_text_no_scx_installed").to_string()));
     }
 
+    // DEBUG
+    //config_kernel_button.set_sensitive(true);
+
     config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window, @weak sched_ext_badge_box => move |_| {
         content_stack.add_named(
         &sched_ext::sched_ext_page(&content_stack, &window, &sched_ext_badge_box),
