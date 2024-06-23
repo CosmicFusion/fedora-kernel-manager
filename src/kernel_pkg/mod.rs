@@ -96,6 +96,7 @@ pub fn kernel_pkg_page(
         .build();
     packages_boxedlist.add_css_class("boxed-list");
     let rows_size_group = gtk::SizeGroup::new(SizeGroupMode::Both);
+
     add_package_rows(
         &packages_boxedlist,
         selected_kernel_branch_clone0.db,
@@ -228,7 +229,7 @@ fn add_package_rows(
             let kernel_packages = kernel_pkg_status.packages;
             let kernel_min_x86_march = kernel_pkg_status.min_x86_march;
             let kernel_package_version = kernel_pkg_status.package_version;
-            let kernel_description = kernel_pkg_status.description;
+            let kernel_description = textwrap::fill(&kernel_pkg_status.description, 40);
 
             let (log_loop_sender, log_loop_receiver) = async_channel::unbounded();
             let log_loop_sender: async_channel::Sender<String> = log_loop_sender.clone();
@@ -299,6 +300,8 @@ fn add_package_rows(
                 kernel_expander_row.add_suffix(&kernel_status_icon);
                 kernel_expander_row.set_title(&kernel_name);
                 kernel_expander_row.set_subtitle(&kernel_package_version);
+                kernel_expander_row.set_title_lines(2);
+                kernel_expander_row.set_subtitle_lines(2);
                 kernel_content_row.add_prefix(&kernel_description_label);
                 kernel_action_box.append(&kernel_remove_button);
                 kernel_action_box.append(&kernel_install_button);

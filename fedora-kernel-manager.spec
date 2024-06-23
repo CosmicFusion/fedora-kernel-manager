@@ -1,9 +1,9 @@
-%define pkg_release 0.1.0
+%define pkg_release 0.1.1
 
 
 Name:          fedora-kernel-manager
 Version:       %{pkg_release}
-Release:       5%{?dist}
+Release:       1%{?dist}
 License:       GPLv2
 Group:         System Environment/Libraries
 Summary:       A Libadwaita rust based application for managing and installing kernels.

@@ -134,8 +134,8 @@ pub fn content(
     browse_kernels_button.connect_clicked(
         clone!(@weak window, @weak content_stack, @strong selected_kernel_branch => move |_| {
             match content_stack.child_by_name("kernel_pkg_page") {
-                Some(_) => ,
-                None() => kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch)
+                Some(_) => {},
+                None => kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch)
             };
             content_stack.set_visible_child_name("kernel_pkg_page")
         }),
