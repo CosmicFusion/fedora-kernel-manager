@@ -260,7 +260,7 @@ fn change_scx_scheduler(
         "bash",
         "-c",
         format!(
-            "/usr/lib/fedora-kernel-manager/scripts/scripts/change_scx.sh {}",
+            "/usr/lib/fedora-kernel-manager/scripts/change_scx.sh {}",
             scx_sched
         )
     )
