@@ -69,6 +69,15 @@ struct KernelBranch {
     init_script: String,
 }
 
+struct KernelPackage {
+    name: String,
+    main_package: String,
+    packages: String,
+    min_x86_march: u32,
+    package_version: String,
+    description: String
+}
+
 fn main() -> glib::ExitCode {
     let current_locale = match env::var_os("LANG") {
         Some(v) => v.into_string().unwrap().chars()

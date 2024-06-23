@@ -36,6 +36,8 @@
   "kernel_install_dialog_reboot_label": "Reboot Now (Optional)",
   "kernel_install_dialog_body_successful": "Kernel installation was successful!",
   "kernel_install_dialog_body_failed":  "Kernel installation failed!",
+  "parse_loading_dialog_heading": "Please Wait!",
+  "parse_loading_dialog_body": "Loading Kernel Repo Data....",
   "log_status_kernel_modify_successful": "Status: kernel modify Successful",
   "log_status_kernel_modify_failed": "Status: kernel modify Failed",
   "scx_sched_expander_row_subtitle": "Select Sched-EXT SCX Scheduler",

@@ -133,10 +133,7 @@ pub fn content(
 
     browse_kernels_button.connect_clicked(
         clone!(@weak window, @weak content_stack, @strong selected_kernel_branch => move |_| {
-                content_stack.add_named(
-            &kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch),
-            Some("kernel_pkg_page"),
-        );
+            kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch);
             content_stack.set_visible_child_name("kernel_pkg_page")
         }),
     );
@@ -164,10 +161,10 @@ pub fn content(
     }
 
     config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window, @weak sched_ext_badge_box => move |_| {
-            content_stack.add_named(
+        content_stack.add_named(
         &sched_ext::sched_ext_page(&content_stack, &window, &sched_ext_badge_box),
         Some("sched_ext_page"),
-    );
+        );
         content_stack.set_visible_child_name("sched_ext_page")
     }));
 
