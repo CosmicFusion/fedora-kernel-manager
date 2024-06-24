@@ -248,6 +248,7 @@ fn kernel_branch_expandable(
         let branch_checkbutton = gtk::CheckButton::builder()
             .valign(Align::Center)
             .can_focus(false)
+            .active(false)
             .build();
         let branch_row = adw::ActionRow::builder()
             .activatable_widget(&branch_checkbutton)
@@ -258,7 +259,7 @@ fn kernel_branch_expandable(
         branch_container.append(&branch_row);
         let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
         branch_checkbutton.connect_toggled(
-            clone!(@weak branch_checkbutton, @weak expander_row => move |_| {
+            clone!(@weak branch_checkbutton, @weak expander_row, @strong branch_clone0 => move |_| {
                 if branch_checkbutton.is_active() == true {
                     expander_row.set_title(&branch_row.title());
                     save_branch_config(&branch_row.title().to_string());
@@ -268,15 +269,19 @@ fn kernel_branch_expandable(
         );
 
         match get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch").exists() {
-            true if fs::read_to_string(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).unwrap()== branch_clone1.name && std::fs::metadata(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).expect("file metadata not found").len() == 0 =>
+            true if fs::read_to_string(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).unwrap().trim().eq(branch_clone1.name.trim()) =>
             {
                 branch_checkbutton.set_active(true)
             }
-            _ => branch_container.first_child().unwrap().property::<gtk::CheckButton>("activatable_widget").set_property("active", true),
+            false =>
+            {
+                branch_container.first_child().unwrap().property::<gtk::CheckButton>("activatable_widget").set_property("active", true)
+            }
+            _ => {}
         };
 
                 *db_load_complete.borrow_mut() = true;
-                println!("{}", t!("db_load_complete"))
+                println!("{} {}", branch_clone0.name,t!("db_load_complete"))
     }
                 }
                 _ => {
@@ -406,7 +411,7 @@ fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
             init_script: branch_init_script,
             db: branch_db,
         };
-        println!("{}", t!("db_download_complete"));
+        println!("{} {}", &branch.name, t!("db_download_complete"));
         println!("{} {} {}", t!("db_init_script_run_p1"), &branch.name, t!("db_init_script_run_p2"));
         match cmd!("bash", "-c", &branch.init_script).run() {
             Ok(_) => println!("{} {}", &branch.name, t!("db_init_script_successful")),
