@@ -1,7 +1,7 @@
 
 ### Intro
 
-Fedora Kernel Manager is a rust written libadwaita app that allows installing/uninstalling kernel packages from "Kernel Branch Providers"
+Fedora Kernel Manager is a rust written libadwaita app that allows installing/uninstalling kernel packages from "Kernel Branch Providers" and Selecting SCX Schedulers.
 
 These kernel branches are json files in ```/usr/lib/fedora-kernel-manager/kernel_branches/```
 
@@ -117,3 +117,15 @@ This is done by reading the version of the rpm package set in this json value.
 * `min_x86_march` The minimum x86 micro-architecture needed, if the user has `x86-64-v3` and this value is set to `4` the entry will not be displayed to the user.
 
 ### GUI
+
+## Primary Page
+![Primary Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/blob/main/assets/main_page.png)
+
+## Branch Selection
+![Branch Selection](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/blob/main/assets/branch_select)
+
+## SCX Sched Selection Page
+![SCX Sched Selection Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/blob/main/assets/scx_select.png)
+
+## Kernel Install Page
+![Kernel Install Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/blob/main/assets/kernel_install.png)
