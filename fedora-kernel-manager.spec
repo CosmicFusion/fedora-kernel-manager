@@ -49,6 +49,7 @@ DESTDIR=%{buildroot} make install
 %{_datadir}/icons/hicolor/scalable/apps/*.svg
 %{_datadir}/polkit-1/actions/fkm.change.scx.policy
 %{_datadir}/polkit-1/actions/fkm.modify.package.policy
+%{_prefix}/lib/fedora-kernel-manager/kernel_branches/kernel.json
 %exclude %{_prefix}/lib/fedora-kernel-manager/kernel_branches/kernel-cachyos.json
 
 %package cachyos-config
