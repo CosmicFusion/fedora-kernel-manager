@@ -122,7 +122,7 @@ This is done by reading the version of the rpm package set in this json value.
 ![Primary Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/assets/main_page.png)
 
 ## Branch Selection
-![Branch Selection](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/assets/branch_select)
+![Branch Selection](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/assets/branch_select.png)
 
 ## SCX Sched Selection Page
 ![SCX Sched Selection Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/assets/scx_select.png)
