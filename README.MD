@@ -119,13 +119,13 @@ This is done by reading the version of the rpm package set in this json value.
 ### GUI
 
 ## Primary Page
-![Primary Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/blob/main/assets/main_page.png)
+![Primary Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/assets/main_page.png)
 
 ## Branch Selection
-![Branch Selection](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/blob/main/assets/branch_select)
+![Branch Selection](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/assets/branch_select)
 
 ## SCX Sched Selection Page
-![SCX Sched Selection Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/blob/main/assets/scx_select.png)
+![SCX Sched Selection Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/assets/scx_select.png)
 
 ## Kernel Install Page
-![Kernel Install Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/blob/main/assets/kernel_install.png)
+![Kernel Install Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/assets/kernel_install.png)
