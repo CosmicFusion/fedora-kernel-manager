@@ -133,10 +133,7 @@ pub fn content(
 
     browse_kernels_button.connect_clicked(
         clone!(@weak window, @weak content_stack, @strong selected_kernel_branch => move |_| {
-            match content_stack.child_by_name("kernel_pkg_page") {
-                Some(_) => {},
-                None => kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch)
-            };
+            kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch);
             content_stack.set_visible_child_name("kernel_pkg_page")
         }),
     );
@@ -503,9 +500,19 @@ fn create_kernel_badges(
     let json: serde_json::Value =
         serde_json::from_str(&selected_kernel_branch_clone.db).expect("Unable to parse");
 
-    let kernel_version = match json["latest_version"].as_str() {
+    let kernel_version_deter = match json["latest_kernel_version_deter_pkg"].as_str() {
         Some(t) => t,
-        _ => "Unknown",
+        _ => "kernel",
+    };
+
+    let kernel_version = match Command::new(
+        "/usr/lib/fedora-kernel-manager/scripts/generate_package_info.sh",
+    )
+        .args(["version", &kernel_version_deter])
+        .output()
+    {
+        Ok(t) => String::from_utf8(t.stdout).unwrap().trim(),
+        _ => "0.0.0".to_owned(),
     };
 
     let version_css_style = if &running_kernel_info.version == &kernel_version {

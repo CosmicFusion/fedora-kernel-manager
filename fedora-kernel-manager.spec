@@ -30,7 +30,6 @@ Requires: 	glib2
 Requires: 	util-linux
 Requires: 	polkit
 Requires:   iputils
-Requires:   fedora-kernel-manager-cachyos-config
 
 Recommends: sched-ext-scx
 

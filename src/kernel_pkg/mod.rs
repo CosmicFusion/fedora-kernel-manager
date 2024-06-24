@@ -138,6 +138,7 @@ pub fn kernel_pkg_page(
 
     back_button.connect_clicked(clone!(@weak content_stack, @weak main_box => move |_| {
         content_stack.set_visible_child_name("content_page");
+        content_stack.remove(&main_box);
     }));
 
     window_bottombar.append(&back_button);
@@ -191,7 +192,7 @@ fn add_package_rows(
                 let kernel_package_version = match Command::new(
                     "/usr/lib/fedora-kernel-manager/scripts/generate_package_info.sh",
                 )
-                    .args(["description", &kernel_main_package])
+                    .args(["version", &kernel_main_package])
                     .output()
                 {
                     Ok(t) => String::from_utf8(t.stdout).unwrap(),
