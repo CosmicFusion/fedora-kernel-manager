@@ -511,7 +511,7 @@ fn create_kernel_badges(
         .args(["version", &kernel_version_deter])
         .output()
     {
-        Ok(t) => String::from_utf8(t.stdout).unwrap().trim(),
+        Ok(t) => String::from_utf8(t.stdout).unwrap().trim().to_owned(),
         _ => "0.0.0".to_owned(),
     };
 
@@ -535,7 +535,7 @@ fn create_kernel_badges(
     ));
     badge_box.append(&create_kernel_badge(
         &t!("kernel_badge_latest_version_label").to_string(),
-        kernel_version,
+        &kernel_version,
         "background-accent-bg",
         &kernel_badges_size_group,
         &kernel_badges_size_group0,

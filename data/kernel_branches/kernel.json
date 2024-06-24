@@ -1,0 +1,5 @@
+{
+  "name": "kernel (RPM Default)",
+  "db_url": "https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/db_kernel.json",
+  "init_script": "true"
+}

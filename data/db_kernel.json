@@ -1,0 +1,11 @@
+{
+  "latest_kernel_version_deter_pkg": "kernel",
+  "kernels": [
+    {
+      "name": "Default Kernel",
+      "main_package": "kernel",
+      "packages": "kernel kernel-devel-matched",
+      "min_x86_march": "1"
+    }
+  ]
+}
