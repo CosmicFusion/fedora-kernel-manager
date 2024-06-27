@@ -1,5 +1,4 @@
-![Primary Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/com.github.cosmicfusion.fedora-kernel-manager.png)
-
+![APP ICON](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/com.github.cosmicfusion.fedora-kernel-manager.svg)
 
 ### Intro
 
