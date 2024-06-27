@@ -120,7 +120,7 @@ pub fn content(
         .build();
 
     let browse_kernels_button = gtk::Button::builder()
-        .icon_name("tux-settings-symbolic")
+        .icon_name("folder-download-symbolic")
         .halign(Align::Start)
         .margin_start(10)
         .margin_end(10)
@@ -139,7 +139,7 @@ pub fn content(
     );
 
     let config_kernel_button = gtk::Button::builder()
-        .icon_name("tux-download-symbolic")
+        .icon_name("emblem-system-symbolic")
         .halign(Align::End)
         .margin_start(10)
         .margin_end(10)

@@ -1,3 +1,5 @@
+![Primary Page](https://raw.githubusercontent.com/CosmicFusion/fedora-kernel-manager/main/data/com.github.cosmicfusion.fedora-kernel-manager.png)
+
 
 ### Intro
 
@@ -115,6 +117,10 @@ This is done by reading the version of the rpm package set in this json value.
 * `main_package` The primary package (only 1) of entry it is used to get the description and version of the entry.
 * `packages` One or more package, it refers to what actually gets installed and removed.
 * `min_x86_march` The minimum x86 micro-architecture needed, if the user has `x86-64-v3` and this value is set to `4` the entry will not be displayed to the user.
+
+### Translation
+
+Contribute translations to this project via [Weblate](https://hosted.weblate.org/projects/cosmicfusion/fedora-kernel-manager/)
 
 ### GUI
 
