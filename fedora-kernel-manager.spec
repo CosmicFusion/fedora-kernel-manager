@@ -1,4 +1,4 @@
-%define pkg_release 0.1.2
+%define pkg_release 0.1.3
 
 
 Name:          fedora-kernel-manager
