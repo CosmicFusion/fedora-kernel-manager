@@ -1,6 +1,6 @@
 [package]
 name = "fedora-kernel-manager"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 
 

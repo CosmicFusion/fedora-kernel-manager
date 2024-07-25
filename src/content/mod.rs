@@ -609,8 +609,8 @@ fn create_current_sched_badge(
 }
 
 fn is_scx_installed() -> bool {
-    match Command::new("rpm")
-        .args(["-q", "sched-ext-scx"])
+    match Command::new("systemctl")
+        .args(["status", "scx"])
         .output() {
         Ok(t) if t.status.success() => true,
         _ => false
