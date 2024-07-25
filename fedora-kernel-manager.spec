@@ -1,4 +1,4 @@
-%define pkg_release 0.1.1
+%define pkg_release 0.1.2
 
 
 Name:          fedora-kernel-manager
@@ -31,7 +31,7 @@ Requires: 	util-linux
 Requires: 	polkit
 Requires:   iputils
 
-Recommends: sched-ext-scx
+Recommends: scx-scheds
 
 %description
 A Libadwaita rust based application for managing and installing kernels.
