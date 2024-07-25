@@ -4,10 +4,10 @@
       "name": "scx_disabled"
     },
     {
-      "name": "scx_central"
+      "name": "scx_bpfland"
     },
     {
-      "name": "scx_flatcg"
+      "name": "scx_central"
     },
     {
       "name": "scx_lavd"
@@ -17,9 +17,6 @@
     },
     {
       "name": "scx_nest"
-    },
-    {
-      "name": "scx_pair"
     },
     {
       "name": "scx_qmap"
