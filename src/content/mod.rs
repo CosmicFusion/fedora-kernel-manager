@@ -609,10 +609,8 @@ fn create_current_sched_badge(
 }
 
 fn is_scx_installed() -> bool {
-    match Command::new("systemctl")
-        .args(["status", "scx"])
-        .output() {
-        Ok(t) if t.status.success() => true,
-        _ => false
+    match Command::new("systemctl").args(["status", "scx"]).output() {
+        Ok(t) if t.status.code().unwrap() != 4 => true,
+        _ => false,
     }
 }
