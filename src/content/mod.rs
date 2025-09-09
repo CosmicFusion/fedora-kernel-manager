@@ -565,15 +565,19 @@ pub fn get_running_kernel_info() -> RunningKernelInfo {
         Err(_) => t!("unknown").to_string(),
     };
 
-    let version = match linux_version::linux_kernel_version() {
+   let version = match Command::new("uname")
+        .arg("-r")
+        .stdout(Stdio::piped())
+        .output()
+    {
         Ok(t) => {
-            if t.patch == 0 {
-                format!("{}.{}", t.major, t.minor)
-            } else {
-                format!("{}.{}.{}", t.major, t.minor, t.patch)
-            }
-        }
-        Err(_) => t!("unknown").to_string(),
+            // Convert the output to a String and trim any surrounding whitespace
+            let output = String::from_utf8(t.stdout).unwrap().trim().to_owned();
+            
+            // Split at the first dash and take the part before it
+            output.split('-').next().unwrap_or(&output).to_owned()
+        },
+        Err(_) => "unknown".to_string(),
     };
 
     let info = RunningKernelInfo {

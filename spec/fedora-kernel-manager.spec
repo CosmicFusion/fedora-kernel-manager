@@ -1,16 +1,14 @@
-%define pkg_release 0.2.0
-
-
 Name:          fedora-kernel-manager
-Version:       %{pkg_release}
-Release:       2%{?dist}
+Version:       0.2.0
+Release:       1%{?dist}
 License:       GPLv2
 Group:         System Environment/Libraries
 Summary:       A Libadwaita rust based application for managing and installing kernels.
 
+URL:            https://github.com/CosmicFusion/%{name}
+Source0:        %{URL}/archive/%{version}/%{name}-%{version}.tar.gz
 
-URL:            https://github.com/CosmicFusion/fedora-kernel-manager
-Source0:        %{URL}/releases/download/%{pkg_release}/fedora-kernel-manager.tar.gz
+ExcludeArch:    %{ix86}
 
 BuildRequires:	wget
 BuildRequires:	cargo
@@ -22,36 +20,37 @@ BuildRequires:	openssl-devel
 BuildRequires:	llvm-devel
 BuildRequires:	clang-devel
 
-Requires:   /usr/bin/bash
+Requires:	/usr/bin/bash
 Requires:	gtk4
 Requires:	gtk3
 Requires:	libadwaita
 Requires: 	glib2
 Requires: 	util-linux
 Requires: 	polkit
-Requires:   iputils
+Requires:	iputils
 
-Recommends: scx-scheds
+Recommends:	scx-scheds
 
 %description
 A Libadwaita rust based application for managing and installing kernels.
 
 %prep
-%autosetup -p1 -n fedora-kernel-manager
+%autosetup -p1 -n %{name}-%{version}
 
 %build
 DESTDIR=%{buildroot} make install
 
 %files
-%{_prefix}/lib/fedora-kernel-manager/*
+%{_prefix}/lib/%{name}/*
 %{_bindir}/*
 %{_datadir}/applications/*
 %{_datadir}/icons/hicolor/scalable/apps/*.svg
 %{_datadir}/polkit-1/actions/fkm.change.scx.policy
 %{_datadir}/polkit-1/actions/fkm.modify.package.policy
-%{_prefix}/lib/fedora-kernel-manager/kernel_branches/kernel.json
-%exclude %{_prefix}/lib/fedora-kernel-manager/kernel_branches/kernel-cachyos.json
-%exclude %{_prefix}/lib/fedora-kernel-manager/scripts/kernel-cachyos-init.sh
+%exclude %{_prefix}/lib/%{name}/kernel_branches/kernel-cachyos.json
+%exclude %{_prefix}/lib/%{name}/scripts/kernel-cachyos-init.sh
+%exclude %{_datadir}/polkit-1/actions/fkm.kernel.cachyos.init.policy
+%exclude %{_datadir}/polkit-1/rules.d/99-fkm.kernel.cachyos.init.rules
 
 %package cachyos-config
 Summary:        Config files to enable coprs/bieszczaders/kernel-cachyos in fedora-kernel-manager.
