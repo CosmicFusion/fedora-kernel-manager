@@ -1,5 +1,5 @@
 Name:          fedora-kernel-manager
-Version:       0.2.0
+Version:       0.2.1
 Release:       1%{?dist}
 License:       GPLv2
 Group:         System Environment/Libraries
