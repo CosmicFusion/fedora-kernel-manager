@@ -19,21 +19,22 @@ pub fn kernel_pkg_page(
 ) {
     let selected_kernel_branch_clone0 = selected_kernel_branch.borrow().clone();
 
-    let parse_loading_dialog = adw::MessageDialog::builder()
-        .transient_for(window)
-        .extra_child(&gtk::Spinner::builder()
-        .hexpand(true)
-        .valign(Align::Start)
-        .halign(Align::Center)
-        .spinning(true)
-        .height_request(128)
-        .width_request(128)
-        .build())
+    let parse_loading_dialog = adw::AlertDialog::builder()
+        .extra_child(
+            &gtk::Spinner::builder()
+                .hexpand(true)
+                .valign(Align::Start)
+                .halign(Align::Center)
+                .spinning(true)
+                .height_request(128)
+                .width_request(128)
+                .build(),
+        )
         .heading(t!("parse_loading_dialog_heading"))
         .body(t!("parse_loading_dialog_body"))
         .build();
 
-    parse_loading_dialog.present();
+    parse_loading_dialog.present(Some(&window.clone()));
 
     let main_box = gtk::Box::builder()
         .hexpand(true)
@@ -43,7 +44,8 @@ pub fn kernel_pkg_page(
 
     let main_label = gtk::Label::builder()
         .label(format!(
-            "{} {}", t!("kernel_main_label_label"),
+            "{} {}",
+            t!("kernel_main_label_label"),
             &selected_kernel_branch_clone0.name
         ))
         .hexpand(true)
@@ -65,7 +67,7 @@ pub fn kernel_pkg_page(
         .margin_top(20)
         .build();
 
-    main_icon.set_icon_name(Some("tux-settings-symbolic"));
+    main_icon.set_icon_name(Some("tux-download-symbolic"));
 
     main_icon.add_css_class("symbolic-accent-bg");
 
@@ -82,10 +84,7 @@ pub fn kernel_pkg_page(
         .build();
     searchbar.add_css_class("rounded-all-25");
 
-    content_stack.add_named(
-        &main_box,
-        Some("kernel_pkg_page"),
-    );
+    content_stack.add_named(&main_box, Some("kernel_pkg_page"));
 
     let packages_boxedlist = gtk::ListBox::builder()
         .selection_mode(SelectionMode::None)
@@ -103,7 +102,7 @@ pub fn kernel_pkg_page(
         &window,
         &rows_size_group,
         &searchbar,
-        &parse_loading_dialog
+        &parse_loading_dialog,
     );
 
     let packages_viewport = gtk::ScrolledWindow::builder()
@@ -136,10 +135,16 @@ pub fn kernel_pkg_page(
 
     back_button.add_css_class("pill");
 
-    back_button.connect_clicked(clone!(@weak content_stack, @weak main_box => move |_| {
-        content_stack.set_visible_child_name("content_page");
-        content_stack.remove(&main_box);
-    }));
+    back_button.connect_clicked(clone!(
+        #[weak]
+        content_stack,
+        #[weak]
+        main_box,
+        move |_| {
+            content_stack.set_visible_child_name("content_page");
+            content_stack.remove(&main_box);
+        }
+    ));
 
     window_bottombar.append(&back_button);
 
@@ -157,7 +162,7 @@ fn add_package_rows(
     window: &adw::ApplicationWindow,
     rows_size_group: &gtk::SizeGroup,
     searchbar: &gtk::SearchEntry,
-    parse_loading_dialog: &adw::MessageDialog
+    parse_loading_dialog: &adw::AlertDialog,
 ) {
     let cpu_feature_level: u32 = match get_cpu_feature_level().as_str() {
         "x86-64-v4" => 4,
@@ -192,8 +197,8 @@ fn add_package_rows(
                 let kernel_package_version = match Command::new(
                     "/usr/lib/fedora-kernel-manager/scripts/generate_package_info.sh",
                 )
-                    .args(["version", &kernel_main_package])
-                    .output()
+                .args(["version", &kernel_main_package])
+                .output()
                 {
                     Ok(t) => String::from_utf8(t.stdout).unwrap(),
                     _ => "Error".to_owned(),
@@ -201,67 +206,79 @@ fn add_package_rows(
                 let kernel_description = match Command::new(
                     "/usr/lib/fedora-kernel-manager/scripts/generate_package_info.sh",
                 )
-                    .args(["description", &kernel_main_package])
-                    .output()
+                .args(["description", &kernel_main_package])
+                .output()
                 {
                     Ok(t) => String::from_utf8(t.stdout).unwrap(),
                     _ => "Error".to_owned(),
                 };
 
-                let kernel_package = KernelPackage{
+                let kernel_package = KernelPackage {
                     name: kernel_name,
                     main_package: kernel_main_package,
                     packages: kernel_packages,
                     min_x86_march: kernel_min_x86_march,
                     package_version: kernel_package_version,
-                    description: kernel_description
+                    description: kernel_description,
                 };
-                kernel_package_sender.send_blocking(kernel_package).expect("Kernel Package sender channel closed")
-            }};
-        kernel_package_done_sender.send_blocking(true).expect("Kernel Package done sender channel closed")
+                kernel_package_sender
+                    .send_blocking(kernel_package)
+                    .expect("Kernel Package sender channel closed")
+            }
+        };
+        kernel_package_done_sender
+            .send_blocking(true)
+            .expect("Kernel Package done sender channel closed")
     });
 
     let kernel_package_context = MainContext::default();
     // The main loop executes the asynchronous block
-    kernel_package_context.spawn_local(clone!(@strong boxedlist, @strong window, @strong rows_size_group => async move {
-        while let Ok(kernel_pkg_status) = kernel_package_receiver.recv().await {
-            let kernel_name = kernel_pkg_status.name;
-            let kernel_main_package = kernel_pkg_status.main_package;
-            let kernel_packages = kernel_pkg_status.packages;
-            let kernel_min_x86_march = kernel_pkg_status.min_x86_march;
-            let kernel_package_version = kernel_pkg_status.package_version;
-            let kernel_description = textwrap::fill(&kernel_pkg_status.description, 40);
+    kernel_package_context.spawn_local(clone!(
+        #[strong]
+        boxedlist,
+        #[strong]
+        window,
+        #[strong]
+        rows_size_group,
+        async move {
+            while let Ok(kernel_pkg_status) = kernel_package_receiver.recv().await {
+                let kernel_name = kernel_pkg_status.name;
+                let kernel_main_package = kernel_pkg_status.main_package;
+                let kernel_packages = kernel_pkg_status.packages;
+                let kernel_min_x86_march = kernel_pkg_status.min_x86_march;
+                let kernel_package_version = kernel_pkg_status.package_version;
+                let kernel_description = textwrap::fill(&kernel_pkg_status.description, 40);
 
-            let (log_loop_sender, log_loop_receiver) = async_channel::unbounded();
-            let log_loop_sender: async_channel::Sender<String> = log_loop_sender.clone();
+                let (log_loop_sender, log_loop_receiver) = async_channel::unbounded();
+                let log_loop_sender: async_channel::Sender<String> = log_loop_sender.clone();
 
-            let (log_status_loop_sender, log_status_loop_receiver) = async_channel::unbounded();
-            let log_status_loop_sender: async_channel::Sender<bool> =
-                log_status_loop_sender.clone();
+                let (log_status_loop_sender, log_status_loop_receiver) = async_channel::unbounded();
+                let log_status_loop_sender: async_channel::Sender<bool> =
+                    log_status_loop_sender.clone();
 
-            let (kernel_status_loop_sender, kernel_status_loop_receiver) =
-                async_channel::unbounded();
-            let kernel_status_loop_sender: async_channel::Sender<bool> =
-                kernel_status_loop_sender.clone();
+                let (kernel_status_loop_sender, kernel_status_loop_receiver) =
+                    async_channel::unbounded();
+                let kernel_status_loop_sender: async_channel::Sender<bool> =
+                    kernel_status_loop_sender.clone();
 
-            let kernel_main_package_clone0 = kernel_main_package.clone();
+                let kernel_main_package_clone0 = kernel_main_package.clone();
 
-            std::thread::spawn(move || loop {
-                let command_installed_status = Command::new("rpm")
-                    .args(["-q", &kernel_main_package_clone0])
-                    .output()
-                    .unwrap();
-                if command_installed_status.status.success() {
-                    kernel_status_loop_sender
-                        .send_blocking(true)
-                        .expect("channel needs to be open")
-                } else {
-                    kernel_status_loop_sender
-                        .send_blocking(false)
-                        .expect("channel needs to be open")
-                }
-                std::thread::sleep(Duration::from_secs(6));
-            });
+                std::thread::spawn(move || loop {
+                    let command_installed_status = Command::new("rpm")
+                        .args(["-q", &kernel_main_package_clone0])
+                        .output()
+                        .unwrap();
+                    if command_installed_status.status.success() {
+                        kernel_status_loop_sender
+                            .send_blocking(true)
+                            .expect("channel needs to be open")
+                    } else {
+                        kernel_status_loop_sender
+                            .send_blocking(false)
+                            .expect("channel needs to be open")
+                    }
+                    std::thread::sleep(Duration::from_secs(6));
+                });
 
                 let kernel_expander_row = kernel_package_row::KernelPackageRow::new();
                 kernel_expander_row.set_package(kernel_main_package);
@@ -312,19 +329,28 @@ fn add_package_rows(
                 //
                 let kernel_status_loop_context = MainContext::default();
                 // The main loop executes the asynchronous block
-                kernel_status_loop_context.spawn_local(clone!(@weak kernel_remove_button, @weak kernel_install_button, @strong kernel_status_loop_receiver => async move {
-                    while let Ok(kernel_status_state) = kernel_status_loop_receiver.recv().await {
+                kernel_status_loop_context.spawn_local(clone!(
+                    #[weak]
+                    kernel_remove_button,
+                    #[weak]
+                    kernel_install_button,
+                    #[strong]
+                    kernel_status_loop_receiver,
+                    async move {
+                        while let Ok(kernel_status_state) = kernel_status_loop_receiver.recv().await
+                        {
                             if kernel_status_state == true {
                                 kernel_status_icon.set_visible(true);
                                 kernel_install_button.set_sensitive(false);
-                            kernel_remove_button.set_sensitive(true);
+                                kernel_remove_button.set_sensitive(true);
                             } else {
                                 kernel_status_icon.set_visible(false);
                                 kernel_remove_button.set_sensitive(false);
                                 kernel_install_button.set_sensitive(true);
                             }
                         }
-                    }));
+                    }
+                ));
                 //
                 let kernel_install_log_terminal_buffer = gtk::TextBuffer::builder().build();
 
@@ -343,17 +369,20 @@ fn add_package_rows(
                     .child(&kernel_install_log_terminal)
                     .build();
 
-                let kernel_install_dialog = adw::MessageDialog::builder()
-                    .transient_for(&window)
-                    .hide_on_close(true)
+                let kernel_install_dialog = adw::AlertDialog::builder()
                     .extra_child(&kernel_install_log_terminal_scroll)
                     .width_request(400)
                     .height_request(200)
                     .heading(t!("kernel_install_dialog_heading"))
                     .build();
-                kernel_install_dialog.add_response("kernel_install_dialog_ok", &t!("kernel_install_dialog_ok_label").to_string());
-                kernel_install_dialog
-                    .add_response("kernel_install_dialog_reboot", &t!("kernel_install_dialog_reboot_label").to_string());
+                kernel_install_dialog.add_response(
+                    "kernel_install_dialog_ok",
+                    &t!("kernel_install_dialog_ok_label").to_string(),
+                );
+                kernel_install_dialog.add_response(
+                    "kernel_install_dialog_reboot",
+                    &t!("kernel_install_dialog_reboot_label").to_string(),
+                );
                 kernel_install_dialog.set_response_appearance(
                     "kernel_install_dialog_reboot",
                     adw::ResponseAppearance::Suggested,
@@ -363,132 +392,230 @@ fn add_package_rows(
                 //
                 let log_loop_context = MainContext::default();
                 // The main loop executes the asynchronous block
-                log_loop_context.spawn_local(clone!(@weak kernel_install_log_terminal_buffer, @weak kernel_install_dialog, @strong log_loop_receiver => async move {
-                while let Ok(state) = log_loop_receiver.recv().await {
-                    kernel_install_log_terminal_buffer.insert(&mut kernel_install_log_terminal_buffer.end_iter(), &("\n".to_string() + &state))
-                }
-                }));
+                log_loop_context.spawn_local(clone!(
+                    #[weak]
+                    kernel_install_log_terminal_buffer,
+                    #[strong]
+                    log_loop_receiver,
+                    async move {
+                        while let Ok(state) = log_loop_receiver.recv().await {
+                            kernel_install_log_terminal_buffer.insert(
+                                &mut kernel_install_log_terminal_buffer.end_iter(),
+                                &("\n".to_string() + &state),
+                            )
+                        }
+                    }
+                ));
 
                 let log_status_loop_context = MainContext::default();
                 // The main loop executes the asynchronous block
-                log_status_loop_context.spawn_local(clone!(@weak kernel_install_dialog, @strong log_status_loop_receiver => async move {
+                log_status_loop_context.spawn_local(clone!(
+                    #[weak]
+                    kernel_install_dialog,
+                    #[strong]
+                    log_status_loop_receiver,
+                    async move {
                         while let Ok(state) = log_status_loop_receiver.recv().await {
                             if state == true {
-                                kernel_install_dialog.set_response_enabled("kernel_install_dialog_ok", true);
+                                kernel_install_dialog
+                                    .set_response_enabled("kernel_install_dialog_ok", true);
                                 //if get_current_username().unwrap() == "pikaos" {
                                 //    kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", false);
                                 //} else {
                                 //    kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", true);
                                 //}
-                                kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", true);
-                                kernel_install_dialog.set_body(&t!("kernel_install_dialog_body_successful").to_string());
+                                kernel_install_dialog
+                                    .set_response_enabled("kernel_install_dialog_reboot", true);
+                                kernel_install_dialog.set_body(
+                                    &t!("kernel_install_dialog_body_successful").to_string(),
+                                );
                             } else {
-                                kernel_install_dialog.set_response_enabled("kernel_install_dialog_ok", true);
-                                kernel_install_dialog.set_body(&t!("kernel_install_dialog_body_failed").to_string());
-                                kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", false);
+                                kernel_install_dialog
+                                    .set_response_enabled("kernel_install_dialog_ok", true);
+                                kernel_install_dialog
+                                    .set_body(&t!("kernel_install_dialog_body_failed").to_string());
+                                kernel_install_dialog
+                                    .set_response_enabled("kernel_install_dialog_reboot", false);
                             }
                         }
-                }));
-                //
-                kernel_install_log_terminal_buffer.connect_changed(clone!(@weak kernel_install_log_terminal, @weak kernel_install_log_terminal_buffer,@weak kernel_install_log_terminal_scroll => move |_|{
-                   if kernel_install_log_terminal_scroll.vadjustment().upper() - kernel_install_log_terminal_scroll.vadjustment().value() > 100.0 {
-                        kernel_install_log_terminal_scroll.vadjustment().set_value(kernel_install_log_terminal_scroll.vadjustment().upper())
                     }
-                }));
+                ));
                 //
-                kernel_install_button.connect_clicked(clone!(@weak kernel_install_log_terminal,@weak kernel_install_log_terminal_buffer, @weak kernel_install_dialog, @strong log_loop_sender, @strong log_status_loop_sender, @strong kernel_packages => move |_| {
-                    kernel_install_log_terminal_buffer.delete(&mut kernel_install_log_terminal_buffer.bounds().0, &mut kernel_install_log_terminal_buffer.bounds().1);
-                    kernel_install_dialog.set_response_enabled("kernel_install_dialog_ok", false);
-                    kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", false);
-                    kernel_install_dialog.set_body("");
-                    kernel_install_dialog.choose(None::<&gio::Cancellable>, move |choice| {
-                    if choice == "kernel_install_dialog_reboot" {
-                            Command::new("systemctl")
-                            .arg("reboot")
-                            .spawn()
-                            .expect("systemctl reboot failed to start");
+                kernel_install_log_terminal_buffer.connect_changed(clone!(
+                    #[weak]
+                    kernel_install_log_terminal_scroll,
+                    move |_| {
+                        if kernel_install_log_terminal_scroll.vadjustment().upper()
+                            - kernel_install_log_terminal_scroll.vadjustment().value()
+                            > 100.0
+                        {
+                            kernel_install_log_terminal_scroll
+                                .vadjustment()
+                                .set_value(kernel_install_log_terminal_scroll.vadjustment().upper())
+                        }
                     }
-                    });
-                    let log_status_loop_sender_clone = log_status_loop_sender.clone();
-                    let log_loop_sender_clone= log_loop_sender.clone();
-                    let kernel_packages_clone = kernel_packages.clone();
-                            std::thread::spawn(move || {
-                            let command = kernel_modify(log_loop_sender_clone, &kernel_packages_clone);
-                            match command {
-                                Ok(_) => {
-                                    println!("{}", t!("log_status_kernel_modify_successful"));
-                                    log_status_loop_sender_clone.send_blocking(true).expect("The channel needs to be open.");
-                                }
-                                Err(_) => {
-                                    println!("{}",  t!("log_status_kernel_modify_failed"));
-                                    log_status_loop_sender_clone.send_blocking(false).expect("The channel needs to be open.");
-                                }
+                ));
+                //
+                kernel_install_button.connect_clicked(clone!(
+                    #[strong]
+                    kernel_install_log_terminal_buffer,
+                    #[strong]
+                    kernel_install_dialog,
+                    #[strong]
+                    log_loop_sender,
+                    #[strong]
+                    log_status_loop_sender,
+                    #[strong]
+                    kernel_packages,
+                    #[strong]
+                    window,
+                    move |_| {
+                        kernel_install_log_terminal_buffer.delete(
+                            &mut kernel_install_log_terminal_buffer.bounds().0,
+                            &mut kernel_install_log_terminal_buffer.bounds().1,
+                        );
+                        kernel_install_dialog
+                            .set_response_enabled("kernel_install_dialog_ok", false);
+                        kernel_install_dialog
+                            .set_response_enabled("kernel_install_dialog_reboot", false);
+                        kernel_install_dialog.set_body("");
+                        kernel_install_dialog.clone().choose(&window, None::<&gio::Cancellable>, move |choice| {
+                            if choice == "kernel_install_dialog_reboot" {
+                                Command::new("systemctl")
+                                    .arg("reboot")
+                                    .spawn()
+                                    .expect("systemctl reboot failed to start");
                             }
-                    });
-                }));
-                kernel_remove_button.connect_clicked(clone!(@weak kernel_install_log_terminal,@weak kernel_install_log_terminal_buffer, @weak kernel_install_dialog, @strong log_loop_sender, @strong log_status_loop_sender, @strong kernel_packages  => move |_| {
-                    kernel_install_log_terminal_buffer.delete(&mut kernel_install_log_terminal_buffer.bounds().0, &mut kernel_install_log_terminal_buffer.bounds().1);
-                    kernel_install_dialog.set_response_enabled("kernel_install_dialog_ok", false);
-                    kernel_install_dialog.set_response_enabled("kernel_install_dialog_reboot", false);
-                    kernel_install_dialog.set_body("");
-                    kernel_install_dialog.choose(None::<&gio::Cancellable>, move |choice| {
-                    if choice == "kernel_install_dialog_reboot" {
-                            Command::new("systemctl")
-                            .arg("reboot")
-                            .spawn()
-                            .expect("systemctl reboot failed to start");
-                    }
-                    });
-                    let log_status_loop_sender_clone = log_status_loop_sender.clone();
-                    let log_loop_sender_clone= log_loop_sender.clone();
-                    let kernel_packages_clone = kernel_packages.clone();
-                            std::thread::spawn(move || {
-                            let command = kernel_modify(log_loop_sender_clone, &kernel_packages_clone);
+                        });
+                        let log_status_loop_sender_clone = log_status_loop_sender.clone();
+                        let log_loop_sender_clone = log_loop_sender.clone();
+                        let kernel_packages_clone = kernel_packages.clone();
+                        std::thread::spawn(move || {
+                            let command =
+                                kernel_modify(log_loop_sender_clone, &kernel_packages_clone);
                             match command {
                                 Ok(_) => {
                                     println!("{}", t!("log_status_kernel_modify_successful"));
-                                    log_status_loop_sender_clone.send_blocking(true).expect("The channel needs to be open.");
+                                    log_status_loop_sender_clone
+                                        .send_blocking(true)
+                                        .expect("The channel needs to be open.");
                                 }
                                 Err(_) => {
                                     println!("{}", t!("log_status_kernel_modify_failed"));
-                                    log_status_loop_sender_clone.send_blocking(false).expect("The channel needs to be open.");
+                                    log_status_loop_sender_clone
+                                        .send_blocking(false)
+                                        .expect("The channel needs to be open.");
                                 }
                             }
-                    });
-                }));
+                        });
+                    }
+                ));
+                kernel_remove_button.connect_clicked(clone!(
+                    #[weak]
+                    kernel_install_log_terminal_buffer,
+                    #[weak]
+                    kernel_install_dialog,
+                    #[strong]
+                    log_loop_sender,
+                    #[strong]
+                    log_status_loop_sender,
+                    #[strong]
+                    kernel_packages,
+                    #[strong]
+                    window,
+                    move |_| {
+                        kernel_install_log_terminal_buffer.delete(
+                            &mut kernel_install_log_terminal_buffer.bounds().0,
+                            &mut kernel_install_log_terminal_buffer.bounds().1,
+                        );
+                        kernel_install_dialog
+                            .set_response_enabled("kernel_install_dialog_ok", false);
+                        kernel_install_dialog
+                            .set_response_enabled("kernel_install_dialog_reboot", false);
+                        kernel_install_dialog.set_body("");
+                        kernel_install_dialog.choose(&window, None::<&gio::Cancellable>, move |choice| {
+                            if choice == "kernel_install_dialog_reboot" {
+                                Command::new("systemctl")
+                                    .arg("reboot")
+                                    .spawn()
+                                    .expect("systemctl reboot failed to start");
+                            }
+                        });
+                        let log_status_loop_sender_clone = log_status_loop_sender.clone();
+                        let log_loop_sender_clone = log_loop_sender.clone();
+                        let kernel_packages_clone = kernel_packages.clone();
+                        std::thread::spawn(move || {
+                            let command =
+                                kernel_modify(log_loop_sender_clone, &kernel_packages_clone);
+                            match command {
+                                Ok(_) => {
+                                    println!("{}", t!("log_status_kernel_modify_successful"));
+                                    log_status_loop_sender_clone
+                                        .send_blocking(true)
+                                        .expect("The channel needs to be open.");
+                                }
+                                Err(_) => {
+                                    println!("{}", t!("log_status_kernel_modify_failed"));
+                                    log_status_loop_sender_clone
+                                        .send_blocking(false)
+                                        .expect("The channel needs to be open.");
+                                }
+                            }
+                        });
+                    }
+                ));
                 if cpu_feature_level >= kernel_min_x86_march {
                     boxedlist.append(&kernel_expander_row);
                 }
+            }
         }
-    }));
+    ));
 
     let kernel_package_done_context = MainContext::default();
-    kernel_package_done_context.spawn_local(clone!(@weak parse_loading_dialog => async move {
-        while let Ok(_state) = kernel_package_done_receiver.recv().await {
-            parse_loading_dialog.close();
-        }
-    }));
-
-    searchbar.connect_search_changed(clone!(@weak searchbar, @weak boxedlist => move |_| {
-        let mut counter = boxedlist.first_child();
-        while let Some(row) = counter {
-            if row.widget_name() == "KernelPackageRow" {
-                if !searchbar.text().is_empty() {
-                    if row.property::<String>("title").to_lowercase().contains(&searchbar.text().to_string().to_lowercase()) || row.property::<String>("package").to_lowercase().contains(&searchbar.text().to_string().to_lowercase()) {
-                        //row.grab_focus();
-                        //row.add_css_class("highlight-widget");
-                        row.set_property("visible", true);
-                        searchbar.grab_focus();
-                    } else {
-                        row.set_property("visible", false);
-                    }
-                } else {
-                    row.set_property("visible", true);
-                }
+    kernel_package_done_context.spawn_local(clone!(
+        #[weak]
+        parse_loading_dialog,
+        async move {
+            while let Ok(_state) = kernel_package_done_receiver.recv().await {
+                parse_loading_dialog.close();
             }
-            counter = row.next_sibling();
         }
-        }));
+    ));
+
+    searchbar.connect_search_changed(clone!(
+        #[weak]
+        searchbar,
+        #[weak]
+        boxedlist,
+        move |_| {
+            let mut counter = boxedlist.first_child();
+            while let Some(row) = counter {
+                if row.widget_name() == "KernelPackageRow" {
+                    if !searchbar.text().is_empty() {
+                        if row
+                            .property::<String>("title")
+                            .to_lowercase()
+                            .contains(&searchbar.text().to_string().to_lowercase())
+                            || row
+                                .property::<String>("package")
+                                .to_lowercase()
+                                .contains(&searchbar.text().to_string().to_lowercase())
+                        {
+                            //row.grab_focus();
+                            //row.add_css_class("highlight-widget");
+                            row.set_property("visible", true);
+                            searchbar.grab_focus();
+                        } else {
+                            row.set_property("visible", false);
+                        }
+                    } else {
+                        row.set_property("visible", true);
+                    }
+                }
+                counter = row.next_sibling();
+            }
+        }
+    ));
 }
 
 const KERNEL_MODIFY_PROG: &str = r###"
@@ -518,7 +645,7 @@ fn kernel_modify(
 fn get_cpu_feature_level() -> String {
     let base_command = Command::new("/lib64/ld-linux-x86-64.so.2") // `ps` command...
         .arg("--help")
-        .env("LANG" ,"en_US")
+        .env("LANG", "en_US")
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();

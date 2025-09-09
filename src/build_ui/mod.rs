@@ -16,6 +16,8 @@ pub fn build_ui(app: &adw::Application) {
     gtk::glib::set_prgname(Some(t!("application_name").to_string()));
     glib::set_application_name(&t!("application_name").to_string());
 
+    let theme_changed_action = gio::SimpleAction::new("theme_changed", None);
+
     let internet_connected = Rc::new(RefCell::new(false));
     let selected_kernel_branch: Rc<RefCell<KernelBranch>> = Rc::new(RefCell::new(KernelBranch {
         name: "?".to_owned(),
@@ -48,23 +50,27 @@ pub fn build_ui(app: &adw::Application) {
 
     let internet_loop_context = MainContext::default();
     // The main loop executes the asynchronous block
-    internet_loop_context.spawn_local(clone!(@weak window_banner => async move {
-        while let Ok(state) = internet_loop_receiver.recv().await {
-            let banner_text = t!("banner_text_no_internet").to_string();
-            if state == true {
-                *internet_connected_status.borrow_mut()=true;
-                if window_banner.title() == banner_text {
-                    window_banner.set_revealed(false)
-                }
-            } else {
-                *internet_connected_status.borrow_mut()=false;
-                if window_banner.title() != t!("banner_text_url_error").to_string() {
-                window_banner.set_title(&banner_text);
-                window_banner.set_revealed(true)
+    internet_loop_context.spawn_local(clone!(
+        #[weak]
+        window_banner,
+        async move {
+            while let Ok(state) = internet_loop_receiver.recv().await {
+                let banner_text = t!("banner_text_no_internet").to_string();
+                if state == true {
+                    *internet_connected_status.borrow_mut() = true;
+                    if window_banner.title() == banner_text {
+                        window_banner.set_revealed(false)
                     }
+                } else {
+                    *internet_connected_status.borrow_mut() = false;
+                    if window_banner.title() != t!("banner_text_url_error").to_string() {
+                        window_banner.set_title(&banner_text);
+                        window_banner.set_revealed(true)
+                    }
+                }
             }
         }
-    }));
+    ));
 
     let window_headerbar = adw::HeaderBar::builder()
         .title_widget(
@@ -90,6 +96,42 @@ pub fn build_ui(app: &adw::Application) {
         .startup_id(APP_ID)
         .build();
 
+    let (gsettings_change_sender, gsettings_change_receiver) = async_channel::unbounded();
+    let gsettings_change_sender_clone0 = gsettings_change_sender.clone();
+
+    thread::spawn(move || {
+        let context = glib::MainContext::default();
+        let main_loop = glib::MainLoop::new(Some(&context), false);
+        let gsettings = gtk::gio::Settings::new("org.gnome.desktop.interface");
+        gsettings.connect_changed(
+            Some("accent-color"),
+            clone!(
+                #[strong]
+                gsettings_change_sender_clone0,
+                move |_, _| {
+                    let gsettings_change_sender_clone0 = gsettings_change_sender_clone0.clone();
+                    glib::timeout_add_seconds_local(5, move || {
+                        gsettings_change_sender_clone0.send_blocking(()).unwrap();
+                        glib::ControlFlow::Break
+                    });
+                }
+            ),
+        );
+        main_loop.run()
+    });
+
+    let gsettings_changed_context = MainContext::default();
+    // The main loop executes the asynchronous block
+    gsettings_changed_context.spawn_local(clone!(
+        #[strong]
+        theme_changed_action,
+        async move {
+            while let Ok(()) = gsettings_change_receiver.recv().await {
+                theme_changed_action.activate(None);
+            }
+        }
+    ));
+
     content_stack.add_named(
         &content::content(
             &content_stack,
@@ -97,6 +139,7 @@ pub fn build_ui(app: &adw::Application) {
             &db_load_complete,
             &window,
             &window_banner,
+            &theme_changed_action,
         ),
         Some("content_page"),
     );
@@ -117,20 +160,21 @@ pub fn build_ui(app: &adw::Application) {
         .icon_name("dialog-information-symbolic")
         .build();
 
-    let credits_window = adw::AboutWindow::builder()
+    let credits_window = adw::AboutDialog::builder()
         .application_icon(APP_ICON)
         .application_name(t!("application_name"))
-        .transient_for(&window)
         .version(VERSION)
-        .hide_on_close(true)
         .developer_name(t!("developer_name"))
         .license_type(License::Gpl20)
         .issue_url(APP_GITHUB.to_owned() + "/issues")
         .build();
 
     window_headerbar.pack_end(&credits_button);
-    credits_button
-        .connect_clicked(clone!(@weak credits_button => move |_| credits_window.present()));
+    credits_button.connect_clicked(clone!(
+        #[strong]
+        window,
+        move |_| credits_window.present(Some(&window))
+    ));
 
     window.present();
 }

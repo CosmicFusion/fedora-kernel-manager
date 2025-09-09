@@ -3,7 +3,7 @@ use std::{cell::RefCell, sync::OnceLock};
 use adw::*;
 use adw::{prelude::*, subclass::prelude::*};
 use glib::{subclass::Signal, Properties};
-use gtk::{glib};
+use gtk::glib;
 
 // ANCHOR: custom_button
 // Object holding the state

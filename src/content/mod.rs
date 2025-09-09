@@ -19,6 +19,7 @@ pub fn content(
     db_load_complete: &Rc<RefCell<bool>>,
     window: &adw::ApplicationWindow,
     window_banner: &adw::Banner,
+    theme_changed_action: &gio::SimpleAction,
 ) -> gtk::Box {
     let (get_kernel_branches_sender, get_kernel_branches_receiver) = async_channel::unbounded();
     let get_kernel_branches_sender = get_kernel_branches_sender.clone();
@@ -81,10 +82,7 @@ pub fn content(
         .orientation(Orientation::Vertical)
         .build();
 
-    let sched_ext_badge_box = adw::Bin::builder()
-        .hexpand(true)
-        .vexpand(true)
-        .build();
+    let sched_ext_badge_box = adw::Bin::builder().hexpand(true).vexpand(true).build();
 
     let kernel_branch_expander_row = adw::ExpanderRow::builder()
         .subtitle(t!("kernel_branch_expander_row_subtitle"))
@@ -131,12 +129,22 @@ pub fn content(
         .build();
     browse_kernels_button.add_css_class("circular");
 
-    browse_kernels_button.connect_clicked(
-        clone!(@weak window, @weak content_stack, @strong selected_kernel_branch => move |_| {
-            kernel_pkg::kernel_pkg_page(&content_stack, &window, &selected_kernel_branch);
+    browse_kernels_button.connect_clicked(clone!(
+        #[weak]
+        window,
+        #[weak]
+        content_stack,
+        #[weak]
+        selected_kernel_branch,
+        move |_| {
+            kernel_pkg::kernel_pkg_page(
+                &content_stack,
+                &window,
+                &selected_kernel_branch,
+            );
             content_stack.set_visible_child_name("kernel_pkg_page")
-        }),
-    );
+        }
+    ));
 
     let config_kernel_button = gtk::Button::builder()
         .icon_name("emblem-system-symbolic")
@@ -152,24 +160,34 @@ pub fn content(
 
     if !is_scx_kernel() {
         config_kernel_button.set_sensitive(false);
-        config_kernel_button
-            .set_tooltip_text(Some(&t!("config_kernel_button_tooltip_text_no_scx").to_string()));
+        config_kernel_button.set_tooltip_text(Some(
+            &t!("config_kernel_button_tooltip_text_no_scx").to_string(),
+        ));
     } else if is_scx_kernel() && !is_scx_installed() {
         config_kernel_button.set_sensitive(false);
-        config_kernel_button
-            .set_tooltip_text(Some(&t!("config_kernel_button_tooltip_text_no_scx_installed").to_string()));
+        config_kernel_button.set_tooltip_text(Some(
+            &t!("config_kernel_button_tooltip_text_no_scx_installed").to_string(),
+        ));
     }
 
     // DEBUG
     //config_kernel_button.set_sensitive(true);
 
-    config_kernel_button.connect_clicked(clone!(@weak content_stack, @weak window, @weak sched_ext_badge_box => move |_| {
-        content_stack.add_named(
-        &sched_ext::sched_ext_page(&content_stack, &window, &sched_ext_badge_box),
-        Some("sched_ext_page"),
-        );
-        content_stack.set_visible_child_name("sched_ext_page")
-    }));
+    config_kernel_button.connect_clicked(clone!(
+        #[weak]
+        content_stack,
+        #[weak]
+        window,
+        #[weak]
+        sched_ext_badge_box,
+        move |_| {
+            content_stack.add_named(
+                &sched_ext::sched_ext_page(&content_stack, &window, &sched_ext_badge_box),
+                Some("sched_ext_page"),
+            );
+            content_stack.set_visible_child_name("sched_ext_page")
+        }
+    ));
 
     button_box.append(&browse_kernels_button);
     button_box.append(&config_kernel_button);
@@ -195,17 +213,40 @@ pub fn content(
 
     let load_badge_async_context = MainContext::default();
     // The main loop executes the asynchronous block
-    load_badge_async_context.spawn_local(clone!(@weak content_box, @weak loading_box, @weak kernel_badge_box, @strong selected_kernel_branch, @strong db_load_complete => async move {
+    load_badge_async_context.spawn_local(clone!(
+        #[strong]
+        content_box,
+        #[weak]
+        content_box,
+        #[weak]
+        kernel_badge_box,
+        #[weak]
+        selected_kernel_branch,
+        #[strong]
+        db_load_complete,
+        #[strong]
+        theme_changed_action,
+        async move {
             while let Ok(_state) = load_badge_async_receiver.recv().await {
-            if *db_load_complete.borrow() == true {
-                let running_kernel_info = get_running_kernel_info();
-                create_kernel_badges(&kernel_badge_box, &running_kernel_info, &selected_kernel_branch);
-                create_current_sched_badge(&sched_ext_badge_box, &running_kernel_info);
-                loading_box.set_visible(false);
-                content_box.set_sensitive(true)
+                if *db_load_complete.borrow() == true {
+                    let running_kernel_info = get_running_kernel_info();
+                    create_kernel_badges(
+                        &kernel_badge_box,
+                        &running_kernel_info,
+                        &selected_kernel_branch,
+                        &theme_changed_action,
+                    );
+                    create_current_sched_badge(
+                        &sched_ext_badge_box,
+                        &running_kernel_info,
+                        &theme_changed_action,
+                    );
+                    loading_box.set_visible(false);
+                    content_box.set_sensitive(true)
+                }
             }
-            }
-    }));
+        }
+    ));
 
     content_box
 }
@@ -238,60 +279,95 @@ fn kernel_branch_expandable(
 
     let get_kernel_branches_loop_context = MainContext::default();
     // The main loop executes the asynchronous block
-    get_kernel_branches_loop_context.spawn_local(clone!(@weak expander_row, @weak branch_container, @strong selected_kernel_branch, @weak loading_box, @weak window_banner, @strong db_load_complete => async move {
-        while let Ok(data) = get_kernel_branches_receiver.recv().await {
-            match data {
-                Ok(t) => {
-                    for branch in t {
-        let branch_clone0 = branch.clone();
-        let branch_clone1 = branch.clone();
-        let branch_checkbutton = gtk::CheckButton::builder()
-            .valign(Align::Center)
-            .can_focus(false)
-            .active(false)
-            .build();
-        let branch_row = adw::ActionRow::builder()
-            .activatable_widget(&branch_checkbutton)
-            .title(branch.name)
-            .build();
-        branch_row.add_prefix(&branch_checkbutton);
-        branch_checkbutton.set_group(Some(&null_checkbutton));
-        branch_container.append(&branch_row);
-        let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
-        branch_checkbutton.connect_toggled(
-            clone!(@weak branch_checkbutton, @weak expander_row, @strong branch_clone0 => move |_| {
-                if branch_checkbutton.is_active() == true {
-                    expander_row.set_title(&branch_row.title());
-                    save_branch_config(&branch_row.title().to_string());
-                    *selected_kernel_branch_clone0.borrow_mut()=branch_clone0.clone()
-                }
-            }),
-        );
+    get_kernel_branches_loop_context.spawn_local(clone!(
+        #[weak]
+        expander_row,
+        #[weak]
+        branch_container,
+        #[strong]
+        selected_kernel_branch,
+        #[weak]
+        loading_box,
+        #[weak]
+        window_banner,
+        #[strong]
+        db_load_complete,
+        async move {
+            while let Ok(data) = get_kernel_branches_receiver.recv().await {
+                match data {
+                    Ok(t) => {
+                        for branch in t {
+                            let branch_clone0 = branch.clone();
+                            let branch_clone1 = branch.clone();
+                            let branch_checkbutton = gtk::CheckButton::builder()
+                                .valign(Align::Center)
+                                .can_focus(false)
+                                .active(false)
+                                .build();
+                            let branch_row = adw::ActionRow::builder()
+                                .activatable_widget(&branch_checkbutton)
+                                .title(branch.name)
+                                .build();
+                            branch_row.add_prefix(&branch_checkbutton);
+                            branch_checkbutton.set_group(Some(&null_checkbutton));
+                            branch_container.append(&branch_row);
+                            let selected_kernel_branch_clone0 = selected_kernel_branch.clone();
+                            branch_checkbutton.connect_toggled(clone!(
+                                #[weak]
+                                branch_checkbutton,
+                                #[weak]
+                                expander_row,
+                                #[strong]
+                                branch_clone0,
+                                move |_| {
+                                    if branch_checkbutton.is_active() == true {
+                                        expander_row.set_title(&branch_row.title());
+                                        save_branch_config(&branch_row.title().to_string());
+                                        *selected_kernel_branch_clone0.borrow_mut() =
+                                            branch_clone0.clone()
+                                    }
+                                }
+                            ));
 
-        match get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch").exists() {
-            true if fs::read_to_string(get_my_home().unwrap().unwrap().join(".config/fedora-kernel-manager/branch")).unwrap().trim().eq(branch_clone1.name.trim()) =>
-            {
-                branch_checkbutton.set_active(true)
-            }
-            false =>
-            {
-                branch_container.first_child().unwrap().property::<gtk::CheckButton>("activatable_widget").set_property("active", true)
-            }
-            _ => {}
-        };
+                            match get_my_home()
+                                .unwrap()
+                                .unwrap()
+                                .join(".config/fedora-kernel-manager/branch")
+                                .exists()
+                            {
+                                true if fs::read_to_string(
+                                    get_my_home()
+                                        .unwrap()
+                                        .unwrap()
+                                        .join(".config/fedora-kernel-manager/branch"),
+                                )
+                                .unwrap()
+                                .trim()
+                                .eq(branch_clone1.name.trim()) =>
+                                {
+                                    branch_checkbutton.set_active(true)
+                                }
+                                false => branch_container
+                                    .first_child()
+                                    .unwrap()
+                                    .property::<gtk::CheckButton>("activatable_widget")
+                                    .set_property("active", true),
+                                _ => {}
+                            };
 
-                *db_load_complete.borrow_mut() = true;
-                println!("{} {}", branch_clone0.name,t!("db_load_complete"))
-    }
-                }
-                _ => {
-                    window_banner.set_title(&t!("banner_text_url_error").to_string());
-                    window_banner.set_revealed(true);
-                    loading_box.set_visible(false);
+                            *db_load_complete.borrow_mut() = true;
+                            println!("{} {}", branch_clone0.name, t!("db_load_complete"))
+                        }
+                    }
+                    _ => {
+                        window_banner.set_title(&t!("banner_text_url_error").to_string());
+                        window_banner.set_revealed(true);
+                        loading_box.set_visible(false);
+                    }
                 }
             }
         }
-    }));
+    ));
 
     let branch_container_viewport = gtk::ScrolledWindow::builder()
         .child(&branch_container)
@@ -302,26 +378,40 @@ fn kernel_branch_expandable(
 
     boxedlist.append(&branch_container_viewport);
 
-    searchbar.connect_search_changed(clone!(@weak searchbar, @weak branch_container => move |_| {
-        let mut counter = branch_container.first_child();
-        while let Some(row) = counter {
-            if row.widget_name() == "AdwActionRow" {
-                if !searchbar.text().is_empty() {
-                    if row.property::<String>("subtitle").to_lowercase().contains(&searchbar.text().to_string().to_lowercase()) || row.property::<String>("title").to_lowercase().contains(&searchbar.text().to_string().to_lowercase()) {
-                        //row.grab_focus();
-                        //row.add_css_class("highlight-widget");
-                        row.set_property("visible", true);
-                        searchbar.grab_focus();
+    searchbar.connect_search_changed(clone!(
+        #[weak]
+        searchbar,
+        #[weak]
+        branch_container,
+        move |_| {
+            let mut counter = branch_container.first_child();
+            while let Some(row) = counter {
+                if row.widget_name() == "AdwActionRow" {
+                    if !searchbar.text().is_empty() {
+                        if row
+                            .property::<String>("subtitle")
+                            .to_lowercase()
+                            .contains(&searchbar.text().to_string().to_lowercase())
+                            || row
+                                .property::<String>("title")
+                                .to_lowercase()
+                                .contains(&searchbar.text().to_string().to_lowercase())
+                        {
+                            //row.grab_focus();
+                            //row.add_css_class("highlight-widget");
+                            row.set_property("visible", true);
+                            searchbar.grab_focus();
+                        } else {
+                            row.set_property("visible", false);
+                        }
                     } else {
-                        row.set_property("visible", false);
+                        row.set_property("visible", true);
                     }
-                } else {
-                    row.set_property("visible", true);
                 }
+                counter = row.next_sibling();
             }
-            counter = row.next_sibling();
         }
-    }));
+    ));
 
     boxedlist
 }
@@ -330,6 +420,7 @@ pub fn create_kernel_badge(
     label0_text: &str,
     label1_text: &str,
     css_style: &str,
+    theme_changed_action: &gio::SimpleAction,
     group_size: &gtk::SizeGroup,
     group_size0: &gtk::SizeGroup,
     group_size1: &gtk::SizeGroup,
@@ -366,6 +457,38 @@ pub fn create_kernel_badge(
 
     label1.add_css_class(css_style);
 
+    #[allow(deprecated)]
+    let color = label1
+        .style_context()
+        .lookup_color("accent_bg_color")
+        .unwrap();
+    if (color.red() * 0.299 + color.green() * 0.587 + color.blue() * 0.114) > 170.0 {
+        label1.remove_css_class("white-color-text");
+        label1.add_css_class("black-color-text");
+    } else {
+        label1.remove_css_class("black-color-text");
+        label1.add_css_class("white-color-text");
+    }
+
+    theme_changed_action.connect_activate(clone!(
+        #[strong]
+        label1,
+        move |_, _| {
+            #[allow(deprecated)]
+            let color = label1
+                .style_context()
+                .lookup_color("accent_bg_color")
+                .unwrap();
+            if (color.red() * 0.299 + color.green() * 0.587 + color.blue() * 0.114) > 170.0 {
+                label1.remove_css_class("white-color-text");
+                label1.add_css_class("black-color-text");
+            } else {
+                label1.remove_css_class("black-color-text");
+                label1.add_css_class("white-color-text");
+            }
+        }
+    ));
+
     badge_box.append(&label0);
     badge_box.append(&label_seprator);
     badge_box.append(&label1);
@@ -388,11 +511,16 @@ pub fn create_kernel_badge(
 
 fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
     let mut kernel_branches_array: Vec<KernelBranch> = Vec::new();
-    let kernel_branch_files_dir = fs::read_dir("/usr/lib/fedora-kernel-manager/kernel_branches").expect("No Kernel json files found");
+    let kernel_branch_files_dir = fs::read_dir("/usr/lib/fedora-kernel-manager/kernel_branches")
+        .expect("No Kernel json files found");
     for kernel_branch_file in kernel_branch_files_dir {
-        let kernel_branch_file_path = kernel_branch_file.expect("couldn't change dir entry to path").path();
-        let kernel_branch_data = fs::read_to_string(kernel_branch_file_path).expect("some json is invalid");
-        let branch: serde_json::Value = serde_json::from_str(&kernel_branch_data).expect("some json is invalid");
+        let kernel_branch_file_path = kernel_branch_file
+            .expect("couldn't change dir entry to path")
+            .path();
+        let kernel_branch_data =
+            fs::read_to_string(kernel_branch_file_path).expect("some json is invalid");
+        let branch: serde_json::Value =
+            serde_json::from_str(&kernel_branch_data).expect("some json is invalid");
         let branch_name = branch["name"].as_str().to_owned().unwrap().to_string();
         let branch_db_url = branch["db_url"].as_str().to_owned().unwrap().to_string();
         let branch_init_script = branch["init_script"]
@@ -400,7 +528,7 @@ fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
             .to_owned()
             .unwrap()
             .to_string();
-        println!("{} {}.",t!("db_downloading"), &branch_name);
+        println!("{} {}.", t!("db_downloading"), &branch_name);
         let branch_db =
             reqwest::blocking::get(branch["db_url"].as_str().to_owned().unwrap().to_string())?
                 .text()
@@ -412,13 +540,18 @@ fn get_kernel_branches() -> Result<Vec<KernelBranch>, reqwest::Error> {
             db: branch_db,
         };
         println!("{} {}", &branch.name, t!("db_download_complete"));
-        println!("{} {} {}", t!("db_init_script_run_p1"), &branch.name, t!("db_init_script_run_p2"));
+        println!(
+            "{} {} {}",
+            t!("db_init_script_run_p1"),
+            &branch.name,
+            t!("db_init_script_run_p2")
+        );
         match cmd!("bash", "-c", &branch.init_script).run() {
             Ok(_) => println!("{} {}", &branch.name, t!("db_init_script_successful")),
             _ => println!("{} {}", &branch.name, t!("db_init_script_failed")),
         };
         kernel_branches_array.push(branch)
-    };
+    }
 
     Ok(kernel_branches_array)
 }
@@ -454,7 +587,7 @@ pub fn get_running_kernel_info() -> RunningKernelInfo {
 }
 
 fn is_scx_kernel() -> bool {
-    if Path::new("/sys/kernel/sched_ext/root/ops").exists() {
+    if Path::new("/sys/kernel/sched_ext").exists() {
         true
     } else {
         false
@@ -462,10 +595,17 @@ fn is_scx_kernel() -> bool {
 }
 pub fn get_current_scheduler(version: String) -> String {
     if is_scx_kernel() {
-        println!("{}", t!("get_current_scheduler_sched_ext_detected"));
         let scx_sched = match fs::read_to_string("/sys/kernel/sched_ext/root/ops") {
             Ok(t) => t,
-            Err(_) => "disabled".to_string(),
+            Err(_) => {
+                return if bore_check() {
+                    "BORE".to_string()
+                } else if Version::from(&version) >= Version::from("6.6") {
+                    "EEVDF?".to_string()
+                } else {
+                    "CFS?".to_string()
+                };
+            }
         };
         "sched_ext: ".to_owned() + &scx_sched
     } else if bore_check() {
@@ -495,6 +635,7 @@ fn create_kernel_badges(
     badge_box: &gtk::Box,
     running_kernel_info: &RunningKernelInfo,
     selected_kernel_branch: &Rc<RefCell<KernelBranch>>,
+    theme_changed_action: &gio::SimpleAction,
 ) {
     let selected_kernel_branch_clone = selected_kernel_branch.borrow().clone();
 
@@ -510,15 +651,14 @@ fn create_kernel_badges(
         _ => "kernel",
     };
 
-    let kernel_version = match Command::new(
-        "/usr/lib/fedora-kernel-manager/scripts/generate_package_info.sh",
-    )
-        .args(["version", &kernel_version_deter])
-        .output()
-    {
-        Ok(t) => String::from_utf8(t.stdout).unwrap().trim().to_owned(),
-        _ => "0.0.0".to_owned(),
-    };
+    let kernel_version =
+        match Command::new("/usr/lib/fedora-kernel-manager/scripts/generate_package_info.sh")
+            .args(["version", &kernel_version_deter])
+            .output()
+        {
+            Ok(t) => String::from_utf8(t.stdout).unwrap().trim().to_owned(),
+            _ => "0.0.0".to_owned(),
+        };
 
     let version_css_style = if &running_kernel_info.version == &kernel_version {
         "background-green-bg"
@@ -534,6 +674,7 @@ fn create_kernel_badges(
         &t!("kernel_badge_branch_label").to_string(),
         &selected_kernel_branch_clone.name,
         "background-accent-bg",
+        &theme_changed_action,
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,
@@ -542,6 +683,7 @@ fn create_kernel_badges(
         &t!("kernel_badge_latest_version_label").to_string(),
         &kernel_version,
         "background-accent-bg",
+        &theme_changed_action,
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,
@@ -550,6 +692,7 @@ fn create_kernel_badges(
         &t!("kernel_badge_running_version_label").to_string(),
         &running_kernel_info.version,
         &version_css_style,
+        &theme_changed_action,
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,
@@ -558,14 +701,16 @@ fn create_kernel_badges(
         &t!("kernel_badge_running_kernel_label").to_string(),
         &running_kernel_info.kernel,
         &version_css_style,
+        &theme_changed_action,
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,
     ));
     badge_box.append(&create_kernel_badge(
         &t!("kernel_badge_running_sched_label").to_string(),
-        &running_kernel_info.sched,
+        &running_kernel_info.sched.trim(),
         "background-accent-bg",
+        &theme_changed_action,
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,
@@ -589,6 +734,7 @@ fn save_branch_config(branch: &str) {
 fn create_current_sched_badge(
     badge_box: &adw::Bin,
     running_kernel_info: &RunningKernelInfo,
+    theme_changed_action: &gio::SimpleAction,
 ) {
     //while let Some(widget) = badge_box.last_child() {
     //    badge_box.remove(&widget);
@@ -602,6 +748,7 @@ fn create_current_sched_badge(
         &t!("kernel_badge_running_sched_label").to_string(),
         &running_kernel_info.sched,
         "background-accent-bg",
+        &theme_changed_action,
         &kernel_badges_size_group,
         &kernel_badges_size_group0,
         &kernel_badges_size_group1,

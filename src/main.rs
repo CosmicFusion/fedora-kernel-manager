@@ -4,12 +4,12 @@ mod kernel_package_row;
 mod kernel_pkg;
 mod sched_ext;
 
-use std::fs;
+use adw::prelude::*;
+use gtk::{gdk, gio, glib, CssProvider};
 use rust_i18n::Backend;
 use std::collections::HashMap;
 use std::env;
-use adw::prelude::*;
-use gtk::{gio,gdk,CssProvider};
+use std::fs;
 
 use crate::gdk::Display;
 
@@ -19,18 +19,28 @@ pub struct I18nBackend {
 impl I18nBackend {
     fn new() -> Self {
         let mut trs = HashMap::new();
-        let locales_dir = fs::read_dir("/usr/lib/fedora-kernel-manager/locales").expect("No translation files found");
+        let locales_dir = fs::read_dir("/usr/lib/fedora-kernel-manager/locales")
+            .expect("No translation files found");
         for locale_file in locales_dir {
-            let locale_file_path = locale_file.expect("couldn't change dir entry to path").path();
-            let locale = String::from(locale_file_path.file_name().unwrap().to_str().unwrap().trim_end_matches(".json"));
-            let locale_data = fs::read_to_string(locale_file_path).expect(format!("invalid json for {}", locale).as_str());
-            let locale_json = serde_json::from_str::<HashMap<String, String>>(&locale_data).unwrap();
+            let locale_file_path = locale_file
+                .expect("couldn't change dir entry to path")
+                .path();
+            let locale = String::from(
+                locale_file_path
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .trim_end_matches(".json"),
+            );
+            let locale_data = fs::read_to_string(locale_file_path)
+                .expect(format!("invalid json for {}", locale).as_str());
+            let locale_json =
+                serde_json::from_str::<HashMap<String, String>>(&locale_data).unwrap();
             trs.insert(locale.to_string(), locale_json);
         }
 
-        return Self {
-            trs
-        };
+        return Self { trs };
     }
 }
 
@@ -75,12 +85,15 @@ struct KernelPackage {
     packages: String,
     min_x86_march: u32,
     package_version: String,
-    description: String
+    description: String,
 }
 
 fn main() -> glib::ExitCode {
     let current_locale = match env::var_os("LANG") {
-        Some(v) => v.into_string().unwrap().chars()
+        Some(v) => v
+            .into_string()
+            .unwrap()
+            .chars()
             .take_while(|&ch| ch != '.')
             .collect::<String>(),
         None => panic!("$LANG is not set"),

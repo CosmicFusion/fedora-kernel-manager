@@ -1,40 +1,86 @@
 {
   "scx_schedulers": [
     {
-      "name": "scx_disabled"
+      "name": "scx_disabled",
+      "modes": []
     },
     {
-      "name": "scx_bpfland"
+      "name": "scx_bpfland",
+      "modes": [
+        {
+          "name": "low_latency",
+          "flags": "-k -s 5000 -l 5000"
+        },
+        {
+          "name": "gaming",
+          "flags": "-m performance"
+        },
+        {
+          "name": "powersave",
+          "flags": "-m powersave"
+        },
+        {
+          "name": "server",
+          "flags": "-c 0"
+        }
+      ]
     },
     {
-      "name": "scx_central"
+      "name": "scx_central",
+      "modes": []
     },
     {
-      "name": "scx_lavd"
+      "name": "scx_flash",
+      "modes": []
     },
     {
-      "name": "scx_layered"
+      "name": "scx_lavd",
+      "modes": [
+        {
+          "name": "performance",
+          "flags": "--performance"
+        },
+        {
+          "name": "powersave",
+          "flags": "--powersave"
+        }
+      ]
     },
     {
-      "name": "scx_nest"
+      "name": "scx_layered",
+      "modes": []
     },
     {
-      "name": "scx_qmap"
+      "name": "scx_nest",
+      "modes": []
     },
     {
-      "name": "scx_rlfifo"
+      "name": "scx_qmap",
+      "modes": []
     },
     {
-      "name": "scx_rustland"
+      "name": "scx_rlfifo",
+      "modes": []
     },
     {
-      "name": "scx_rusty"
+      "name": "scx_rustland",
+      "modes": []
     },
     {
-      "name": "scx_simple"
+      "name": "scx_rusty",
+      "modes": []
     },
     {
-      "name": "scx_userland"
-    }
+      "name": "scx_userland",
+      "modes": []
+    },
+    {
+      "name": "scx_p2dq",
+      "modes": []
+    },
+    {
+      "name": "scx_tickless",
+      "modes": []
+    }          
   ]
 }
